@@ -1,0 +1,1876 @@
+diff --git a/MAKEALL b/MAKEALL
+index 0e4e744..44c7b7e 100755
+--- a/MAKEALL
++++ b/MAKEALL
+@@ -194,7 +194,7 @@ LIST_ARM7="	\
+ #########################################################################
+ 
+ LIST_ARM9="	\
+-	at91rm9200dk	cmc_pu2						\
++	at91rm9200dk	cmc_pu2 ecb_at91 \
+ 	ap920t		ap922_XA10	ap926ejs	ap946es		\
+ 	ap966		cp920t		cp922_XA10	cp926ejs	\
+ 	cp946es		cp966		lpd7a400	mp2usb		\
+diff --git a/Makefile b/Makefile
+index d5e220a..35804a3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1928,6 +1928,9 @@ xtract_omap730p2 = $(subst _cs0boot,,$(subst _cs3boot,, $(subst _config,,$1)))
+ at91rm9200dk_config	:	unconfig
+ 	@$(MKCONFIG) $(@:_config=) arm arm920t at91rm9200dk NULL at91rm9200
+ 
++ecb_at91_config	:	unconfig
++	@$(MKCONFIG) $(@:_config=) arm arm920t ecb_at91 NULL at91rm9200
++
+ cmc_pu2_config	:	unconfig
+ 	@$(MKCONFIG) $(@:_config=) arm arm920t cmc_pu2 NULL at91rm9200
+ 
+diff --git a/README b/README
+index bb5b46e..7c894da 100644
+--- a/README
++++ b/README
+@@ -318,7 +318,7 @@ The following options need to be configured:
+ 		CONFIG_LUBBOCK,		CONFIG_OSK_OMAP5912,	CONFIG_OMAP2420H4,
+ 		CONFIG_PLEB2,		CONFIG_SHANNON,		CONFIG_P2_OMAP730,
+ 		CONFIG_SMDK2400,	CONFIG_SMDK2410,	CONFIG_TRAB,
+-		CONFIG_VCMA9
++		CONFIG_VCMA9,		CONFIG_ECB_AT91
+ 
+ 		MicroBlaze based boards:
+ 		------------------------
+diff --git a/board/at91rm9200dk/at91rm9200dk.c b/board/at91rm9200dk/at91rm9200dk.c
+index 002981a..84abdbc 100644
+--- a/board/at91rm9200dk/at91rm9200dk.c
++++ b/board/at91rm9200dk/at91rm9200dk.c
+@@ -140,3 +140,29 @@ void nand_init (void)
+ 	printf ("%4lu MB\n", nand_probe(AT91_SMARTMEDIA_BASE) >> 20);
+ }
+ #endif
++
++
++#ifdef CONFIG_HAS_DATAFLASH
++#include <dataflash.h>
++
++void AT91F_DataflashMapInit(void)
++{
++	static int cs[][CFG_MAX_DATAFLASH_BANKS] = {
++		/* Logical adress, CS */
++		{CFG_DATAFLASH_LOGIC_ADDR_CS0, 0},
++		{CFG_DATAFLASH_LOGIC_ADDR_CS3, 3}
++		};
++
++	static dataflash_protect_t area_list[NB_DATAFLASH_AREA] = {
++		/*define the area offsets*/
++		{0, 0x7fff, FLAG_PROTECT_SET, "ROM code"},
++		{0x8000, 0x1ffff, FLAG_PROTECT_SET, "u-boot code"},
++		{0x20000, 0x27fff, FLAG_PROTECT_CLEAR, "u-boot environment"},
++		{0x28000, 0x1fffff, FLAG_PROTECT_CLEAR,
++		 "Data area size to tune"},
++		};
++
++	AT91F_MapInit (cs, area_list);
++}
++
++#endif
+diff --git a/board/ecb_at91/Makefile b/board/ecb_at91/Makefile
+new file mode 100644
+index 0000000..224d91b
+--- /dev/null
++++ b/board/ecb_at91/Makefile
+@@ -0,0 +1,50 @@
++#
++# (C) Copyright 2003-2006
++# Wolfgang Denk, DENX Software Engineering, wd@denx.de.
++#
++# See file CREDITS for list of people who contributed to this
++# project.
++#
++# This program is free software; you can redistribute it and/or
++# modify it under the terms of the GNU General Public License as
++# published by the Free Software Foundation; either version 2 of
++# the License, or (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++# MA 02111-1307 USA
++#
++
++include $(TOPDIR)/config.mk
++
++LIB	= $(obj)lib$(BOARD).a
++
++COBJS	:= $(BOARD).o at45.o flash.o
++
++SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
++OBJS	:= $(addprefix $(obj),$(COBJS))
++SOBJS	:= $(addprefix $(obj),$(SOBJS))
++
++$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
++	$(AR) $(ARFLAGS) $@ $(OBJS) $(SOBJS)
++
++clean:
++	rm -f $(SOBJS) $(OBJS)
++
++distclean:	clean
++	rm -f $(LIB) core *.bak .depend
++
++#########################################################################
++
++# defines $(obj).depend target
++include $(SRCTREE)/rules.mk
++
++sinclude $(obj).depend
++
++#########################################################################
+diff --git a/board/ecb_at91/at45.c b/board/ecb_at91/at45.c
+new file mode 100644
+index 0000000..f886fe4
+--- /dev/null
++++ b/board/ecb_at91/at45.c
+@@ -0,0 +1,621 @@
++/* Driver for ATMEL DataFlash support
++ * Author : Hamid Ikdoumi (Atmel)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ *
++ */
++
++#include <config.h>
++#include <common.h>
++#include <asm/hardware.h>
++
++#ifdef CONFIG_HAS_DATAFLASH
++#include <dataflash.h>
++
++#define AT91C_SPI_CLK	10000000	/* Max Value = 10MHz to be compliant to
++the Continuous Array Read function */
++
++/* AC Characteristics */
++/* DLYBS = tCSS = 250ns min and DLYBCT = tCSH = 250ns */
++#define DATAFLASH_TCSS	(0xC << 16)
++#define DATAFLASH_TCHS	(0x1 << 24)
++
++#define AT91C_TIMEOUT_WRDY			200000
++#define AT91C_SPI_PCS0_SERIAL_DATAFLASH		0xE     /* Chip Select 0 : NPCS0 %1110 */
++#define AT91C_SPI_PCS3_DATAFLASH_CARD		0x7     /* Chip Select 3 : NPCS3 %0111 */
++
++void AT91F_SpiInit(void) {
++
++/*-------------------------------------------------------------------*/
++/*	SPI DataFlash Init								*/
++/*-------------------------------------------------------------------*/
++	/* Configure PIOs */
++	AT91C_BASE_PIOA->PIO_ASR = AT91C_PA3_NPCS0 | AT91C_PA4_NPCS1 | AT91C_PA1_MOSI | AT91C_PA5_NPCS2 |
++				   AT91C_PA6_NPCS3 | AT91C_PA0_MISO | AT91C_PA2_SPCK;
++	AT91C_BASE_PIOA->PIO_PDR = AT91C_PA3_NPCS0 | AT91C_PA4_NPCS1 | AT91C_PA1_MOSI | AT91C_PA5_NPCS2 |
++				   AT91C_PA6_NPCS3 | AT91C_PA0_MISO | AT91C_PA2_SPCK;
++	/* Enable CLock */
++	AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_SPI;
++
++	/* Reset the SPI */
++	AT91C_BASE_SPI->SPI_CR = AT91C_SPI_SWRST;
++
++	/* Configure SPI in Master Mode with No CS selected !!! */
++	AT91C_BASE_SPI->SPI_MR = AT91C_SPI_MSTR | AT91C_SPI_MODFDIS | AT91C_SPI_PCS;
++
++	/* Configure CS0 and CS3 */
++	*(AT91C_SPI_CSR + 0) = AT91C_SPI_CPOL | (AT91C_SPI_DLYBS & DATAFLASH_TCSS) | (AT91C_SPI_DLYBCT &
++	DATAFLASH_TCHS) | ((AT91C_MASTER_CLOCK / (2*AT91C_SPI_CLK)) << 8);
++
++	*(AT91C_SPI_CSR + 3) = AT91C_SPI_CPOL | (AT91C_SPI_DLYBS & DATAFLASH_TCSS) | (AT91C_SPI_DLYBCT &
++	DATAFLASH_TCHS) | ((AT91C_MASTER_CLOCK / (2*AT91C_SPI_CLK)) << 8);
++
++}
++
++void AT91F_SpiEnable(int cs) {
++	switch(cs) {
++	case 0:	/* Configure SPI CS0 for Serial DataFlash AT45DBxx */
++		AT91C_BASE_SPI->SPI_MR &= 0xFFF0FFFF;
++		AT91C_BASE_SPI->SPI_MR |= ((AT91C_SPI_PCS0_SERIAL_DATAFLASH<<16) & AT91C_SPI_PCS);
++		break;
++	case 3:	/* Configure SPI CS3 for Serial DataFlash Card */
++		/* Set up PIO SDC_TYPE to switch on DataFlash Card and not MMC/SDCard */
++		AT91C_BASE_PIOB->PIO_PER = AT91C_PIO_PB7;	/* Set in PIO mode */
++		AT91C_BASE_PIOB->PIO_OER = AT91C_PIO_PB7;	/* Configure in output */
++		/* Clear Output */
++		AT91C_BASE_PIOB->PIO_CODR = AT91C_PIO_PB7;
++		/* Configure PCS */
++		AT91C_BASE_SPI->SPI_MR &= 0xFFF0FFFF;
++		AT91C_BASE_SPI->SPI_MR |= ((AT91C_SPI_PCS3_DATAFLASH_CARD<<16) & AT91C_SPI_PCS);
++		break;
++	}
++
++	/* SPI_Enable */
++	AT91C_BASE_SPI->SPI_CR = AT91C_SPI_SPIEN;
++}
++
++/*----------------------------------------------------------------------------*/
++/* \fn    AT91F_SpiWrite						      */
++/* \brief Set the PDC registers for a transfert				      */
++/*----------------------------------------------------------------------------*/
++unsigned int AT91F_SpiWrite ( AT91PS_DataflashDesc pDesc )
++{
++	unsigned int timeout;
++
++	pDesc->state = BUSY;
++
++	AT91C_BASE_SPI->SPI_PTCR = AT91C_PDC_TXTDIS + AT91C_PDC_RXTDIS;
++
++	/* Initialize the Transmit and Receive Pointer */
++	AT91C_BASE_SPI->SPI_RPR = (unsigned int)pDesc->rx_cmd_pt ;
++	AT91C_BASE_SPI->SPI_TPR = (unsigned int)pDesc->tx_cmd_pt ;
++
++	/* Intialize the Transmit and Receive Counters */
++	AT91C_BASE_SPI->SPI_RCR = pDesc->rx_cmd_size;
++	AT91C_BASE_SPI->SPI_TCR = pDesc->tx_cmd_size;
++
++	if ( pDesc->tx_data_size != 0 ) {
++		/* Initialize the Next Transmit and Next Receive Pointer */
++		AT91C_BASE_SPI->SPI_RNPR = (unsigned int)pDesc->rx_data_pt ;
++		AT91C_BASE_SPI->SPI_TNPR = (unsigned int)pDesc->tx_data_pt ;
++
++		/* Intialize the Next Transmit and Next Receive Counters */
++		AT91C_BASE_SPI->SPI_RNCR = pDesc->rx_data_size ;
++		AT91C_BASE_SPI->SPI_TNCR = pDesc->tx_data_size ;
++	}
++
++	/* arm simple, non interrupt dependent timer */
++	reset_timer_masked();
++	timeout = 0;
++
++	AT91C_BASE_SPI->SPI_PTCR = AT91C_PDC_TXTEN + AT91C_PDC_RXTEN;
++	while(!(AT91C_BASE_SPI->SPI_SR & AT91C_SPI_RXBUFF) && ((timeout = get_timer_masked() ) < CFG_SPI_WRITE_TOUT));
++	AT91C_BASE_SPI->SPI_PTCR = AT91C_PDC_TXTDIS + AT91C_PDC_RXTDIS;
++	pDesc->state = IDLE;
++
++	if (timeout >= CFG_SPI_WRITE_TOUT){
++		printf("Error Timeout\n\r");
++		return DATAFLASH_ERROR;
++	}
++
++	return DATAFLASH_OK;
++}
++
++
++/*----------------------------------------------------------------------*/
++/* \fn    AT91F_DataFlashSendCommand					*/
++/* \brief Generic function to send a command to the dataflash		*/
++/*----------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_DataFlashSendCommand(
++	AT91PS_DataFlash pDataFlash,
++	unsigned char OpCode,
++	unsigned int CmdSize,
++	unsigned int DataflashAddress)
++{
++    unsigned int adr;
++
++	if ( (pDataFlash->pDataFlashDesc->state) != IDLE)
++		return DATAFLASH_BUSY;
++
++	/* process the address to obtain page address and byte address */
++	adr = ((DataflashAddress / (pDataFlash->pDevice->pages_size)) << pDataFlash->pDevice->page_offset) + (DataflashAddress % (pDataFlash->pDevice->pages_size));
++
++	/* fill the  command  buffer */
++	pDataFlash->pDataFlashDesc->command[0] = OpCode;
++	if (pDataFlash->pDevice->pages_number >= 16384) {
++		pDataFlash->pDataFlashDesc->command[1] = (unsigned char)((adr & 0x0F000000) >> 24);
++		pDataFlash->pDataFlashDesc->command[2] = (unsigned char)((adr & 0x00FF0000) >> 16);
++		pDataFlash->pDataFlashDesc->command[3] = (unsigned char)((adr & 0x0000FF00) >> 8);
++		pDataFlash->pDataFlashDesc->command[4] = (unsigned char)(adr & 0x000000FF);
++	} else {
++		pDataFlash->pDataFlashDesc->command[1] = (unsigned char)((adr & 0x00FF0000) >> 16);
++		pDataFlash->pDataFlashDesc->command[2] = (unsigned char)((adr & 0x0000FF00) >> 8);
++		pDataFlash->pDataFlashDesc->command[3] = (unsigned char)(adr & 0x000000FF) ;
++		pDataFlash->pDataFlashDesc->command[4] = 0;
++	}
++	pDataFlash->pDataFlashDesc->command[5] = 0;
++	pDataFlash->pDataFlashDesc->command[6] = 0;
++	pDataFlash->pDataFlashDesc->command[7] = 0;
++
++	/* Initialize the SpiData structure for the spi write fuction */
++	pDataFlash->pDataFlashDesc->tx_cmd_pt   =  pDataFlash->pDataFlashDesc->command ;
++	pDataFlash->pDataFlashDesc->tx_cmd_size =  CmdSize ;
++	pDataFlash->pDataFlashDesc->rx_cmd_pt   =  pDataFlash->pDataFlashDesc->command ;
++	pDataFlash->pDataFlashDesc->rx_cmd_size =  CmdSize ;
++
++	/* send the command and read the data */
++	return AT91F_SpiWrite (pDataFlash->pDataFlashDesc);
++}
++
++
++/*----------------------------------------------------------------------*/
++/* \fn    AT91F_DataFlashGetStatus					*/
++/* \brief Read the status register of the dataflash			*/
++/*----------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_DataFlashGetStatus(AT91PS_DataflashDesc pDesc)
++{
++	AT91S_DataFlashStatus status;
++
++	/* if a transfert is in progress ==> return 0 */
++	if( (pDesc->state) != IDLE)
++		return DATAFLASH_BUSY;
++
++	/* first send the read status command (D7H) */
++	pDesc->command[0] = DB_STATUS;
++	pDesc->command[1] = 0;
++
++	pDesc->DataFlash_state  = GET_STATUS;
++	pDesc->tx_data_size 	= 0 ;	/* Transmit the command and receive response */
++	pDesc->tx_cmd_pt 		= pDesc->command ;
++	pDesc->rx_cmd_pt 		= pDesc->command ;
++	pDesc->rx_cmd_size 		= 2 ;
++	pDesc->tx_cmd_size 		= 2 ;
++	status = AT91F_SpiWrite (pDesc);
++
++	pDesc->DataFlash_state = *( (unsigned char *) (pDesc->rx_cmd_pt) +1);
++
++	return status;
++}
++
++
++/*----------------------------------------------------------------------*/
++/* \fn    AT91F_DataFlashWaitReady					*/
++/* \brief wait for dataflash ready (bit7 of the status register == 1)	*/
++/*----------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_DataFlashWaitReady(AT91PS_DataflashDesc pDataFlashDesc, unsigned int timeout)
++{
++	pDataFlashDesc->DataFlash_state = IDLE;
++
++	do {
++		AT91F_DataFlashGetStatus(pDataFlashDesc);
++		timeout--;
++	} while( ((pDataFlashDesc->DataFlash_state & 0x80) != 0x80) && (timeout > 0) );
++
++	if((pDataFlashDesc->DataFlash_state & 0x80) != 0x80)
++		return DATAFLASH_ERROR;
++
++	return DATAFLASH_OK;
++}
++
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_DataFlashContinuousRead 				*/
++/* Object              : Continuous stream Read 				*/
++/* Input Parameters    : DataFlash Service					*/
++/*						: <src> = dataflash address	*/
++/*                     : <*dataBuffer> = data buffer pointer			*/
++/*                     : <sizeToRead> = data buffer size			*/
++/* Return value		: State of the dataflash				*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_DataFlashContinuousRead (
++	AT91PS_DataFlash pDataFlash,
++	int src,
++	unsigned char *dataBuffer,
++	int sizeToRead )
++{
++	AT91S_DataFlashStatus status;
++	/* Test the size to read in the device */
++	if ( (src + sizeToRead) > (pDataFlash->pDevice->pages_size * (pDataFlash->pDevice->pages_number)))
++		return DATAFLASH_MEMORY_OVERFLOW;
++
++	pDataFlash->pDataFlashDesc->rx_data_pt = dataBuffer;
++	pDataFlash->pDataFlashDesc->rx_data_size = sizeToRead;
++	pDataFlash->pDataFlashDesc->tx_data_pt = dataBuffer;
++	pDataFlash->pDataFlashDesc->tx_data_size = sizeToRead;
++
++	status = AT91F_DataFlashSendCommand (pDataFlash, DB_CONTINUOUS_ARRAY_READ, 8, src);
++	/* Send the command to the dataflash */
++	return(status);
++}
++
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_DataFlashPagePgmBuf				*/
++/* Object              : Main memory page program through buffer 1 or buffer 2	*/
++/* Input Parameters    : DataFlash Service					*/
++/*						: <*src> = Source buffer	*/
++/*                     : <dest> = dataflash destination address			*/
++/*                     : <SizeToWrite> = data buffer size			*/
++/* Return value		: State of the dataflash				*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_DataFlashPagePgmBuf(
++	AT91PS_DataFlash pDataFlash,
++	unsigned char *src,
++	unsigned int dest,
++	unsigned int SizeToWrite)
++{
++	int cmdsize;
++	pDataFlash->pDataFlashDesc->tx_data_pt = src ;
++	pDataFlash->pDataFlashDesc->tx_data_size = SizeToWrite ;
++	pDataFlash->pDataFlashDesc->rx_data_pt = src;
++	pDataFlash->pDataFlashDesc->rx_data_size = SizeToWrite;
++
++	cmdsize = 4;
++	/* Send the command to the dataflash */
++	if (pDataFlash->pDevice->pages_number >= 16384)
++		cmdsize = 5;
++	return(AT91F_DataFlashSendCommand (pDataFlash, DB_PAGE_PGM_BUF1, cmdsize, dest));
++}
++
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_MainMemoryToBufferTransfert			*/
++/* Object              : Read a page in the SRAM Buffer 1 or 2			*/
++/* Input Parameters    : DataFlash Service					*/
++/*                     : Page concerned						*/
++/*                     : 							*/
++/* Return value		: State of the dataflash				*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_MainMemoryToBufferTransfert(
++	AT91PS_DataFlash pDataFlash,
++	unsigned char BufferCommand,
++	unsigned int page)
++{
++	int cmdsize;
++	/* Test if the buffer command is legal */
++	if ((BufferCommand != DB_PAGE_2_BUF1_TRF) && (BufferCommand != DB_PAGE_2_BUF2_TRF))
++		return DATAFLASH_BAD_COMMAND;
++
++	/* no data to transmit or receive */
++	pDataFlash->pDataFlashDesc->tx_data_size = 0;
++	cmdsize = 4;
++	if (pDataFlash->pDevice->pages_number >= 16384)
++		cmdsize = 5;
++	return(AT91F_DataFlashSendCommand (pDataFlash, BufferCommand, cmdsize, page*pDataFlash->pDevice->pages_size));
++}
++
++
++/*----------------------------------------------------------------------------- */
++/* Function Name       : AT91F_DataFlashWriteBuffer				*/
++/* Object              : Write data to the internal sram buffer 1 or 2		*/
++/* Input Parameters    : DataFlash Service					*/
++/*			: <BufferCommand> = command to write buffer1 or buffer2	*/
++/*                     : <*dataBuffer> = data buffer to write			*/
++/*                     : <bufferAddress> = address in the internal buffer	*/
++/*                     : <SizeToWrite> = data buffer size			*/
++/* Return value		: State of the dataflash				*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_DataFlashWriteBuffer (
++	AT91PS_DataFlash pDataFlash,
++	unsigned char BufferCommand,
++	unsigned char *dataBuffer,
++	unsigned int bufferAddress,
++	int SizeToWrite )
++{
++	int cmdsize;
++	/* Test if the buffer command is legal */
++	if ((BufferCommand != DB_BUF1_WRITE) && (BufferCommand != DB_BUF2_WRITE))
++		return DATAFLASH_BAD_COMMAND;
++
++	/* buffer address must be lower than page size */
++	if (bufferAddress > pDataFlash->pDevice->pages_size)
++		return DATAFLASH_BAD_ADDRESS;
++
++	if ( (pDataFlash->pDataFlashDesc->state)  != IDLE)
++		return DATAFLASH_BUSY;
++
++	/* Send first Write Command */
++	pDataFlash->pDataFlashDesc->command[0] = BufferCommand;
++	pDataFlash->pDataFlashDesc->command[1] = 0;
++	if (pDataFlash->pDevice->pages_number >= 16384) {
++	    	pDataFlash->pDataFlashDesc->command[2] = 0;
++	    	pDataFlash->pDataFlashDesc->command[3] = (unsigned char)(((unsigned int)(bufferAddress &  pDataFlash->pDevice->byte_mask)) >> 8) ;
++	    	pDataFlash->pDataFlashDesc->command[4] = (unsigned char)((unsigned int)bufferAddress  & 0x00FF) ;
++		cmdsize = 5;
++	} else {
++	    	pDataFlash->pDataFlashDesc->command[2] = (unsigned char)(((unsigned int)(bufferAddress &  pDataFlash->pDevice->byte_mask)) >> 8) ;
++	    	pDataFlash->pDataFlashDesc->command[3] = (unsigned char)((unsigned int)bufferAddress  & 0x00FF) ;
++	    	pDataFlash->pDataFlashDesc->command[4] = 0;
++		cmdsize = 4;
++	}
++
++	pDataFlash->pDataFlashDesc->tx_cmd_pt 	 = pDataFlash->pDataFlashDesc->command ;
++	pDataFlash->pDataFlashDesc->tx_cmd_size = cmdsize ;
++	pDataFlash->pDataFlashDesc->rx_cmd_pt 	 = pDataFlash->pDataFlashDesc->command ;
++	pDataFlash->pDataFlashDesc->rx_cmd_size = cmdsize ;
++
++	pDataFlash->pDataFlashDesc->rx_data_pt 	= dataBuffer ;
++	pDataFlash->pDataFlashDesc->tx_data_pt 	= dataBuffer ;
++	pDataFlash->pDataFlashDesc->rx_data_size 	= SizeToWrite ;
++	pDataFlash->pDataFlashDesc->tx_data_size 	= SizeToWrite ;
++
++	return AT91F_SpiWrite(pDataFlash->pDataFlashDesc);
++}
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_PageErase                                        */
++/* Object              : Erase a page 						*/
++/* Input Parameters    : DataFlash Service					*/
++/*                     : Page concerned						*/
++/*                     : 							*/
++/* Return value		: State of the dataflash				*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_PageErase(
++	AT91PS_DataFlash pDataFlash,
++	unsigned int page)
++{
++	int cmdsize;
++	/* Test if the buffer command is legal */
++	/* no data to transmit or receive */
++    	pDataFlash->pDataFlashDesc->tx_data_size = 0;
++
++	cmdsize = 4;
++	if (pDataFlash->pDevice->pages_number >= 16384)
++		cmdsize = 5;
++	return(AT91F_DataFlashSendCommand (pDataFlash, DB_PAGE_ERASE, cmdsize, page*pDataFlash->pDevice->pages_size));
++}
++
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_BlockErase                                       */
++/* Object              : Erase a Block 						*/
++/* Input Parameters    : DataFlash Service					*/
++/*                     : Page concerned						*/
++/*                     : 							*/
++/* Return value		: State of the dataflash				*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_BlockErase(
++	AT91PS_DataFlash pDataFlash,
++	unsigned int block)
++{
++	int cmdsize;
++	/* Test if the buffer command is legal */
++	/* no data to transmit or receive */
++    	pDataFlash->pDataFlashDesc->tx_data_size = 0;
++	cmdsize = 4;
++	if (pDataFlash->pDevice->pages_number >= 16384)
++		cmdsize = 5;
++	return(AT91F_DataFlashSendCommand (pDataFlash, DB_BLOCK_ERASE,cmdsize, block*8*pDataFlash->pDevice->pages_size));
++}
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_WriteBufferToMain				*/
++/* Object              : Write buffer to the main memory			*/
++/* Input Parameters    : DataFlash Service					*/
++/*		: <BufferCommand> = command to send to buffer1 or buffer2	*/
++/*                     : <dest> = main memory address				*/
++/* Return value		: State of the dataflash				*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_WriteBufferToMain (
++	AT91PS_DataFlash pDataFlash,
++	unsigned char BufferCommand,
++	unsigned int dest )
++{
++	int cmdsize;
++	/* Test if the buffer command is correct */
++	if ((BufferCommand != DB_BUF1_PAGE_PGM) &&
++	    (BufferCommand != DB_BUF1_PAGE_ERASE_PGM) &&
++	    (BufferCommand != DB_BUF2_PAGE_PGM) &&
++	    (BufferCommand != DB_BUF2_PAGE_ERASE_PGM) )
++		return DATAFLASH_BAD_COMMAND;
++
++	/* no data to transmit or receive */
++	pDataFlash->pDataFlashDesc->tx_data_size = 0;
++
++	cmdsize = 4;
++	if (pDataFlash->pDevice->pages_number >= 16384)
++		cmdsize = 5;
++	/* Send the command to the dataflash */
++	return(AT91F_DataFlashSendCommand (pDataFlash, BufferCommand, cmdsize, dest));
++}
++
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_PartialPageWrite					*/
++/* Object              : Erase partielly a page					*/
++/* Input Parameters    : <page> = page number					*/
++/*			: <AdrInpage> = adr to begin the fading			*/
++/*                     : <length> = Number of bytes to erase			*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_PartialPageWrite (
++	AT91PS_DataFlash pDataFlash,
++	unsigned char *src,
++	unsigned int dest,
++	unsigned int size)
++{
++	unsigned int page;
++	unsigned int AdrInPage;
++
++	page = dest / (pDataFlash->pDevice->pages_size);
++	AdrInPage = dest % (pDataFlash->pDevice->pages_size);
++
++	/* Read the contents of the page in the Sram Buffer */
++	AT91F_MainMemoryToBufferTransfert(pDataFlash, DB_PAGE_2_BUF1_TRF, page);
++	AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
++	/*Update the SRAM buffer */
++	AT91F_DataFlashWriteBuffer(pDataFlash, DB_BUF1_WRITE, src, AdrInPage, size);
++
++	AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
++
++	/* Erase page if a 128 Mbits device */
++	if (pDataFlash->pDevice->pages_number >= 16384) {
++		AT91F_PageErase(pDataFlash, page);
++		/* Rewrite the modified Sram Buffer in the main memory */
++		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
++	}
++
++	/* Rewrite the modified Sram Buffer in the main memory */
++	return(AT91F_WriteBufferToMain(pDataFlash, DB_BUF1_PAGE_ERASE_PGM, (page*pDataFlash->pDevice->pages_size)));
++}
++
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_DataFlashWrite					*/
++/* Object              :							*/
++/* Input Parameters    : <*src> = Source buffer					*/
++/*                     : <dest> = dataflash adress				*/
++/*                     : <size> = data buffer size				*/
++/*------------------------------------------------------------------------------*/
++AT91S_DataFlashStatus AT91F_DataFlashWrite(
++	AT91PS_DataFlash pDataFlash,
++	unsigned char *src,
++	int dest,
++	int size )
++{
++	unsigned int length;
++	unsigned int page;
++	unsigned int status;
++
++	AT91F_SpiEnable(pDataFlash->pDevice->cs);
++
++	if ( (dest + size) > (pDataFlash->pDevice->pages_size * (pDataFlash->pDevice->pages_number)))
++		return DATAFLASH_MEMORY_OVERFLOW;
++
++	/* If destination does not fit a page start address */
++	if ((dest % ((unsigned int)(pDataFlash->pDevice->pages_size)))  != 0 ) {
++		length = pDataFlash->pDevice->pages_size - (dest % ((unsigned int)(pDataFlash->pDevice->pages_size)));
++
++		if (size < length)
++			length = size;
++
++		if(!AT91F_PartialPageWrite(pDataFlash,src, dest, length))
++			return DATAFLASH_ERROR;
++
++		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
++
++		/* Update size, source and destination pointers */
++		size -= length;
++		dest += length;
++		src += length;
++	}
++
++	while (( size - pDataFlash->pDevice->pages_size ) >= 0 ) {
++		/* program dataflash page */
++		page = (unsigned int)dest / (pDataFlash->pDevice->pages_size);
++
++		status = AT91F_DataFlashWriteBuffer(pDataFlash, DB_BUF1_WRITE, src, 0, pDataFlash->pDevice->pages_size);
++		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
++
++		status = AT91F_PageErase(pDataFlash, page);
++		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
++		if (!status)
++			return DATAFLASH_ERROR;
++
++		status = AT91F_WriteBufferToMain (pDataFlash, DB_BUF1_PAGE_PGM, dest);
++		if(!status)
++			return DATAFLASH_ERROR;
++
++		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
++
++		/* Update size, source and destination pointers */
++		size -= pDataFlash->pDevice->pages_size ;
++		dest += pDataFlash->pDevice->pages_size ;
++		src  += pDataFlash->pDevice->pages_size ;
++	}
++
++	/* If still some bytes to read */
++	if ( size > 0 ) {
++		/* program dataflash page */
++		if(!AT91F_PartialPageWrite(pDataFlash, src, dest, size) )
++			return DATAFLASH_ERROR;
++
++		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
++	}
++	return DATAFLASH_OK;
++}
++
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_DataFlashRead 					*/
++/* Object              : Read a block in dataflash				*/
++/* Input Parameters    : 							*/
++/* Return value		: 							*/
++/*------------------------------------------------------------------------------*/
++int AT91F_DataFlashRead(
++	AT91PS_DataFlash pDataFlash,
++	unsigned long addr,
++	unsigned long size,
++	char *buffer)
++{
++	unsigned long SizeToRead;
++
++	AT91F_SpiEnable(pDataFlash->pDevice->cs);
++
++	if(AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY) != DATAFLASH_OK)
++		return -1;
++
++	while (size) {
++		SizeToRead = (size < 0x8000)? size:0x8000;
++
++		if (AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY) != DATAFLASH_OK)
++			return -1;
++
++		if (AT91F_DataFlashContinuousRead (pDataFlash, addr, (uchar *)buffer, SizeToRead) != DATAFLASH_OK)
++			return -1;
++
++		size -= SizeToRead;
++		addr += SizeToRead;
++		buffer += SizeToRead;
++	}
++
++	return DATAFLASH_OK;
++}
++
++
++/*------------------------------------------------------------------------------*/
++/* Function Name       : AT91F_DataflashProbe 					*/
++/* Object              : 							*/
++/* Input Parameters    : 							*/
++/* Return value	       : Dataflash status register				*/
++/*------------------------------------------------------------------------------*/
++int AT91F_DataflashProbe(int cs, AT91PS_DataflashDesc pDesc)
++{
++	AT91F_SpiEnable(cs);
++	AT91F_DataFlashGetStatus(pDesc);
++	return((pDesc->command[1] == 0xFF)? 0: pDesc->command[1] & 0x3C);
++}
++
++#endif
+diff --git a/board/ecb_at91/config.mk b/board/ecb_at91/config.mk
+new file mode 100644
+index 0000000..9ce161e
+--- /dev/null
++++ b/board/ecb_at91/config.mk
+@@ -0,0 +1 @@
++TEXT_BASE = 0x21f00000
+diff --git a/board/ecb_at91/ecb_at91.c b/board/ecb_at91/ecb_at91.c
+new file mode 100644
+index 0000000..7507300
+--- /dev/null
++++ b/board/ecb_at91/ecb_at91.c
+@@ -0,0 +1,112 @@
++/*
++ * (C) Copyright 2007
++ * emQbit
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <common.h>
++#include <asm/arch/AT91RM9200.h>
++#include <at91rm9200_net.h>
++#include <lxt972.h>
++
++DECLARE_GLOBAL_DATA_PTR;
++
++/*
++ * Miscelaneous platform dependant initialisations
++ */
++
++void lowlevel_init(void)
++{
++	/* Required by assembly functions - do nothing */
++}
++
++int board_init (void)
++{
++	/* Enable Ctrlc */
++	console_init_f ();
++
++	/* arch number of ECB_AT91 board */
++	gd->bd->bi_arch_number = MACH_TYPE_ECBAT91;
++
++	/* adress of boot parameters */
++	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
++
++	return 0;
++}
++
++int dram_init (void)
++{
++	gd->bd->bi_dram[0].start = PHYS_SDRAM;
++	gd->bd->bi_dram[0].size = PHYS_SDRAM_SIZE;
++	return 0;
++}
++
++#ifdef CONFIG_DRIVER_ETHER
++#if (CONFIG_COMMANDS & CFG_CMD_NET)
++
++/*
++ * Name:
++ *	at91rm9200_GetPhyInterface
++ * Description:
++ *	Initialise the interface functions to the PHY
++ * Arguments:
++ *	None
++ * Return value:
++ *	None
++ */
++
++void at91rm9200_GetPhyInterface(AT91PS_PhyOps p_phyops)
++{
++	p_phyops->Init = lxt972_InitPhy;
++	p_phyops->IsPhyConnected = lxt972_IsPhyConnected;
++	p_phyops->GetLinkSpeed = lxt972_GetLinkSpeed;
++	p_phyops->AutoNegotiate = lxt972_AutoNegotiate;
++}
++
++#endif	/* CONFIG_COMMANDS & CFG_CMD_NET */
++#endif	/* CONFIG_DRIVER_ETHER */
++
++#ifdef CONFIG_HAS_DATAFLASH
++#include <dataflash.h>
++
++void AT91F_DataflashMapInit(void)
++{
++	static int cs[][CFG_MAX_DATAFLASH_BANKS] = {
++		/* Logical adress, CS */
++		{CFG_DATAFLASH_LOGIC_ADDR_CS0, 0},
++		};
++
++	static dataflash_protect_t area_list[NB_DATAFLASH_AREA] = {
++		/*define the dataflash offsets*/
++		{DATAFLASH_LOADER_BASE /* 0 */, DATAFLASH_UBOOT_BASE - 1,
++		 FLAG_PROTECT_SET, "Darrell loader"},
++		{DATAFLASH_UBOOT_BASE, DATAFLASH_ENV_UBOOT_BASE - 1,
++		 FLAG_PROTECT_SET, "U-boot"},
++		{DATAFLASH_ENV_UBOOT_BASE, DATAFLASH_KERNEL_BASE - 1,
++		 FLAG_PROTECT_CLEAR, "Environment"},
++		{DATAFLASH_KERNEL_BASE, DATAFLASH_FILESYSTEM_BASE - 1,
++		 FLAG_PROTECT_CLEAR, "Kernel"},
++		{DATAFLASH_FILESYSTEM_BASE, 0x1fffff, FLAG_PROTECT_SET, "Filesystem"},
++		};
++
++	AT91F_MapInit (cs, area_list);
++}
++
++#endif
+diff --git a/board/ecb_at91/flash.c b/board/ecb_at91/flash.c
+new file mode 100644
+index 0000000..0513d61
+--- /dev/null
++++ b/board/ecb_at91/flash.c
+@@ -0,0 +1,502 @@
++/*
++ * (C) Copyright 2002
++ * Lineo, Inc. <www.lineo.com>
++ * Bernhard Kuhn <bkuhn@lineo.com>
++ *
++ * (C) Copyright 2002
++ * Sysgo Real-Time Solutions, GmbH <www.elinos.com>
++ * Alex Zuepke <azu@sysgo.de>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <common.h>
++
++ulong myflush(void);
++
++
++/* Flash Organization Structure */
++typedef struct OrgDef
++{
++	unsigned int sector_number;
++	unsigned int sector_size;
++} OrgDef;
++
++
++/* Flash Organizations */
++OrgDef OrgAT49BV16x4[] =
++{
++	{  8,  8*1024 },	/*   8 *  8 kBytes sectors */
++	{  2, 32*1024 },	/*   2 * 32 kBytes sectors */
++	{ 30, 64*1024 },	/*  30 * 64 kBytes sectors */
++};
++
++OrgDef OrgAT49BV16x4A[] =
++{
++	{  8,  8*1024 },	/*   8 *  8 kBytes sectors */
++	{ 31, 64*1024 },	/*  31 * 64 kBytes sectors */
++};
++
++OrgDef OrgAT49BV6416[] =
++{
++	{   8,  8*1024 },	/*   8 *  8 kBytes sectors */
++	{ 127, 64*1024 },	/* 127 * 64 kBytes sectors */
++};
++
++flash_info_t    flash_info[CFG_MAX_FLASH_BANKS];
++
++/* AT49BV1614A Codes */
++#define FLASH_CODE1		0xAA
++#define FLASH_CODE2		0x55
++#define ID_IN_CODE		0x90
++#define ID_OUT_CODE		0xF0
++
++
++#define CMD_READ_ARRAY		0x00F0
++#define CMD_UNLOCK1		0x00AA
++#define CMD_UNLOCK2		0x0055
++#define CMD_ERASE_SETUP		0x0080
++#define CMD_ERASE_CONFIRM	0x0030
++#define CMD_PROGRAM		0x00A0
++#define CMD_UNLOCK_BYPASS	0x0020
++#define CMD_SECTOR_UNLOCK	0x0070
++
++#define MEM_FLASH_ADDR1		(*(volatile u16 *)(CFG_FLASH_BASE + (0x00005555<<1)))
++#define MEM_FLASH_ADDR2		(*(volatile u16 *)(CFG_FLASH_BASE + (0x00002AAA<<1)))
++
++#define BIT_ERASE_DONE		0x0080
++#define BIT_RDY_MASK		0x0080
++#define BIT_PROGRAM_ERROR	0x0020
++#define BIT_TIMEOUT		0x80000000 /* our flag */
++
++#define READY 1
++#define ERR   2
++#define TMO   4
++
++/*-----------------------------------------------------------------------
++ */
++void flash_identification (flash_info_t * info)
++{
++	volatile u16 manuf_code, device_code, add_device_code;
++
++	MEM_FLASH_ADDR1 = FLASH_CODE1;
++	MEM_FLASH_ADDR2 = FLASH_CODE2;
++	MEM_FLASH_ADDR1 = ID_IN_CODE;
++
++	manuf_code = *(volatile u16 *) CFG_FLASH_BASE;
++	device_code = *(volatile u16 *) (CFG_FLASH_BASE + 2);
++	add_device_code = *(volatile u16 *) (CFG_FLASH_BASE + (3 << 1));
++
++	MEM_FLASH_ADDR1 = FLASH_CODE1;
++	MEM_FLASH_ADDR2 = FLASH_CODE2;
++	MEM_FLASH_ADDR1 = ID_OUT_CODE;
++
++	/* Vendor type */
++	info->flash_id = ATM_MANUFACT & FLASH_VENDMASK;
++	printf ("Atmel: ");
++
++	if ((device_code & FLASH_TYPEMASK) == (ATM_ID_BV1614 & FLASH_TYPEMASK)) {
++
++		if ((add_device_code & FLASH_TYPEMASK) ==
++			(ATM_ID_BV1614A & FLASH_TYPEMASK)) {
++			info->flash_id |= ATM_ID_BV1614A & FLASH_TYPEMASK;
++			printf ("AT49BV1614A (16Mbit)\n");
++		} else {				/* AT49BV1614 Flash */
++			info->flash_id |= ATM_ID_BV1614 & FLASH_TYPEMASK;
++			printf ("AT49BV1614 (16Mbit)\n");
++		}
++
++	} else if ((device_code & FLASH_TYPEMASK) == (ATM_ID_BV6416 & FLASH_TYPEMASK)) {
++		info->flash_id |= ATM_ID_BV6416 & FLASH_TYPEMASK;
++		printf ("AT49BV6416 (64Mbit)\n");
++	}
++}
++
++ushort flash_number_sector(OrgDef *pOrgDef, unsigned int nb_blocks)
++{
++	int i, nb_sectors = 0;
++
++	for (i=0; i<nb_blocks; i++){
++		nb_sectors += pOrgDef[i].sector_number;
++	}
++
++	return nb_sectors;
++}
++
++void flash_unlock_sector(flash_info_t * info, unsigned int sector)
++{
++	volatile u16 *addr = (volatile u16 *) (info->start[sector]);
++
++	MEM_FLASH_ADDR1 = CMD_UNLOCK1;
++	*addr = CMD_SECTOR_UNLOCK;
++}
++
++
++ulong flash_init (void)
++{
++	int i, j, k;
++	unsigned int flash_nb_blocks, sector;
++	unsigned int start_address;
++	OrgDef *pOrgDef;
++
++	ulong size = 0;
++
++	for (i = 0; i < CFG_MAX_FLASH_BANKS; i++) {
++		ulong flashbase = 0;
++
++		flash_identification (&flash_info[i]);
++
++		if ((flash_info[i].flash_id & FLASH_TYPEMASK) ==
++			(ATM_ID_BV1614 & FLASH_TYPEMASK)) {
++
++			pOrgDef = OrgAT49BV16x4;
++			flash_nb_blocks = sizeof (OrgAT49BV16x4) / sizeof (OrgDef);
++		} else if ((flash_info[i].flash_id & FLASH_TYPEMASK) ==
++			(ATM_ID_BV1614A & FLASH_TYPEMASK)){	/* AT49BV1614A Flash */
++
++			pOrgDef = OrgAT49BV16x4A;
++			flash_nb_blocks = sizeof (OrgAT49BV16x4A) / sizeof (OrgDef);
++		} else if ((flash_info[i].flash_id & FLASH_TYPEMASK) ==
++			(ATM_ID_BV6416 & FLASH_TYPEMASK)){	/* AT49BV6416 Flash */
++
++			pOrgDef = OrgAT49BV6416;
++			flash_nb_blocks = sizeof (OrgAT49BV6416) / sizeof (OrgDef);
++		} else {
++			flash_nb_blocks = 0;
++			pOrgDef = OrgAT49BV16x4;
++		}
++
++		flash_info[i].sector_count = flash_number_sector(pOrgDef, flash_nb_blocks);
++		memset (flash_info[i].protect, 0, flash_info[i].sector_count);
++
++		if (i == 0)
++			flashbase = PHYS_FLASH_1;
++		else
++			panic ("configured too many flash banks!\n");
++
++		sector = 0;
++		start_address = flashbase;
++		flash_info[i].size = 0;
++
++		for (j = 0; j < flash_nb_blocks; j++) {
++			for (k = 0; k < pOrgDef[j].sector_number; k++) {
++				flash_info[i].start[sector++] = start_address;
++				start_address += pOrgDef[j].sector_size;
++				flash_info[i].size += pOrgDef[j].sector_size;
++			}
++		}
++
++		size += flash_info[i].size;
++
++		if ((flash_info[i].flash_id & FLASH_TYPEMASK) ==
++			(ATM_ID_BV6416 & FLASH_TYPEMASK)){	/* AT49BV6416 Flash */
++
++			/* Unlock all sectors at reset */
++			for (j=0; j<flash_info[i].sector_count; j++){
++				flash_unlock_sector(&flash_info[i], j);
++			}
++		}
++	}
++
++	/* Protect binary boot image */
++	flash_protect (FLAG_PROTECT_SET,
++		       CFG_FLASH_BASE,
++		       CFG_FLASH_BASE + CFG_BOOT_SIZE - 1, &flash_info[0]);
++
++	/* Protect environment variables */
++	flash_protect (FLAG_PROTECT_SET,
++		       CFG_ENV_ADDR,
++		       CFG_ENV_ADDR + CFG_ENV_SIZE - 1, &flash_info[0]);
++
++	/* Protect U-Boot gzipped image */
++	flash_protect (FLAG_PROTECT_SET,
++		       CFG_U_BOOT_BASE,
++		       CFG_U_BOOT_BASE + CFG_U_BOOT_SIZE - 1, &flash_info[0]);
++
++	return size;
++}
++
++/*-----------------------------------------------------------------------
++ */
++void flash_print_info (flash_info_t * info)
++{
++	int i;
++
++	switch (info->flash_id & FLASH_VENDMASK) {
++	case (ATM_MANUFACT & FLASH_VENDMASK):
++		printf ("Atmel: ");
++		break;
++	default:
++		printf ("Unknown Vendor ");
++		break;
++	}
++
++	switch (info->flash_id & FLASH_TYPEMASK) {
++	case (ATM_ID_BV1614 & FLASH_TYPEMASK):
++		printf ("AT49BV1614 (16Mbit)\n");
++		break;
++	case (ATM_ID_BV1614A & FLASH_TYPEMASK):
++		printf ("AT49BV1614A (16Mbit)\n");
++		break;
++	case (ATM_ID_BV6416 & FLASH_TYPEMASK):
++		printf ("AT49BV6416 (64Mbit)\n");
++		break;
++	default:
++		printf ("Unknown Chip Type\n");
++		return;
++	}
++
++	printf ("  Size: %ld MB in %d Sectors\n",
++		info->size >> 20, info->sector_count);
++
++	printf ("  Sector Start Addresses:");
++	for (i = 0; i < info->sector_count; i++) {
++		if ((i % 5) == 0) {
++			printf ("\n   ");
++		}
++		printf (" %08lX%s", info->start[i],
++			info->protect[i] ? " (RO)" : "     ");
++	}
++	printf ("\n");
++}
++
++/*-----------------------------------------------------------------------
++ */
++
++int flash_erase (flash_info_t * info, int s_first, int s_last)
++{
++	ulong result;
++	int iflag, cflag, prot, sect;
++	int rc = ERR_OK;
++	int chip1;
++
++	/* first look for protection bits */
++
++	if (info->flash_id == FLASH_UNKNOWN)
++		return ERR_UNKNOWN_FLASH_TYPE;
++
++	if ((s_first < 0) || (s_first > s_last)) {
++		return ERR_INVAL;
++	}
++
++	if ((info->flash_id & FLASH_VENDMASK) !=
++		(ATM_MANUFACT & FLASH_VENDMASK)) {
++		return ERR_UNKNOWN_FLASH_VENDOR;
++	}
++
++	prot = 0;
++	for (sect = s_first; sect <= s_last; ++sect) {
++		if (info->protect[sect]) {
++			prot++;
++		}
++	}
++	if (prot)
++		return ERR_PROTECTED;
++
++	/*
++	 * Disable interrupts which might cause a timeout
++	 * here. Remember that our exception vectors are
++	 * at address 0 in the flash, and we don't want a
++	 * (ticker) exception to happen while the flash
++	 * chip is in programming mode.
++	 */
++	cflag = icache_status ();
++	icache_disable ();
++	iflag = disable_interrupts ();
++
++	/* Start erase on unprotected sectors */
++	for (sect = s_first; sect <= s_last && !ctrlc (); sect++) {
++		printf ("Erasing sector %2d ... ", sect);
++
++		/* arm simple, non interrupt dependent timer */
++		reset_timer_masked ();
++
++		if (info->protect[sect] == 0) {	/* not protected */
++			volatile u16 *addr = (volatile u16 *) (info->start[sect]);
++
++			MEM_FLASH_ADDR1 = CMD_UNLOCK1;
++			MEM_FLASH_ADDR2 = CMD_UNLOCK2;
++			MEM_FLASH_ADDR1 = CMD_ERASE_SETUP;
++
++			MEM_FLASH_ADDR1 = CMD_UNLOCK1;
++			MEM_FLASH_ADDR2 = CMD_UNLOCK2;
++			*addr = CMD_ERASE_CONFIRM;
++
++			/* wait until flash is ready */
++			chip1 = 0;
++
++			do {
++				result = *addr;
++
++				/* check timeout */
++				if (get_timer_masked () > CFG_FLASH_ERASE_TOUT) {
++					MEM_FLASH_ADDR1 = CMD_READ_ARRAY;
++					chip1 = TMO;
++					break;
++				}
++
++				if (!chip1 && (result & 0xFFFF) & BIT_ERASE_DONE)
++					chip1 = READY;
++
++			} while (!chip1);
++
++			MEM_FLASH_ADDR1 = CMD_READ_ARRAY;
++
++			if (chip1 == ERR) {
++				rc = ERR_PROG_ERROR;
++				goto outahere;
++			}
++			if (chip1 == TMO) {
++				rc = ERR_TIMOUT;
++				goto outahere;
++			}
++
++			printf ("ok.\n");
++		} else {			/* it was protected */
++			printf ("protected!\n");
++		}
++	}
++
++	if (ctrlc ())
++		printf ("User Interrupt!\n");
++
++outahere:
++	/* allow flash to settle - wait 10 ms */
++	udelay_masked (10000);
++
++	if (iflag)
++		enable_interrupts ();
++
++	if (cflag)
++		icache_enable ();
++
++	return rc;
++}
++
++/*-----------------------------------------------------------------------
++ * Copy memory to flash
++ */
++
++static int write_word (flash_info_t * info, ulong dest, ulong data)
++{
++	volatile u16 *addr = (volatile u16 *) dest;
++	ulong result;
++	int rc = ERR_OK;
++	int cflag, iflag;
++	int chip1;
++
++	/*
++	 * Check if Flash is (sufficiently) erased
++	 */
++	result = *addr;
++	if ((result & data) != data)
++		return ERR_NOT_ERASED;
++
++	/*
++	 * Disable interrupts which might cause a timeout
++	 * here. Remember that our exception vectors are
++	 * at address 0 in the flash, and we don't want a
++	 * (ticker) exception to happen while the flash
++	 * chip is in programming mode.
++	 */
++	cflag = icache_status ();
++	icache_disable ();
++	iflag = disable_interrupts ();
++
++	MEM_FLASH_ADDR1 = CMD_UNLOCK1;
++	MEM_FLASH_ADDR2 = CMD_UNLOCK2;
++	MEM_FLASH_ADDR1 = CMD_PROGRAM;
++	*addr = data;
++
++	/* arm simple, non interrupt dependent timer */
++	reset_timer_masked ();
++
++	/* wait until flash is ready */
++	chip1 = 0;
++	do {
++		result = *addr;
++
++		/* check timeout */
++		if (get_timer_masked () > CFG_FLASH_ERASE_TOUT) {
++			chip1 = ERR | TMO;
++			break;
++		}
++		if (!chip1 && ((result & 0x80) == (data & 0x80)))
++			chip1 = READY;
++
++	} while (!chip1);
++
++	*addr = CMD_READ_ARRAY;
++
++	if (chip1 == ERR || *addr != data)
++		rc = ERR_PROG_ERROR;
++
++	if (iflag)
++		enable_interrupts ();
++
++	if (cflag)
++		icache_enable ();
++
++	return rc;
++}
++
++/*-----------------------------------------------------------------------
++ * Copy memory to flash.
++ */
++
++int write_buff (flash_info_t * info, uchar * src, ulong addr, ulong cnt)
++{
++	ulong wp, data;
++	int rc;
++
++	if (addr & 1) {
++		printf ("unaligned destination not supported\n");
++		return ERR_ALIGN;
++	};
++
++	if ((int) src & 1) {
++		printf ("unaligned source not supported\n");
++		return ERR_ALIGN;
++	};
++
++	wp = addr;
++
++	while (cnt >= 2) {
++		data = *((volatile u16 *) src);
++		if ((rc = write_word (info, wp, data)) != 0) {
++			return (rc);
++		}
++		src += 2;
++		wp += 2;
++		cnt -= 2;
++	}
++
++	if (cnt == 1) {
++		data = (*((volatile u8 *) src)) | (*((volatile u8 *) (wp + 1)) <<
++										   8);
++		if ((rc = write_word (info, wp, data)) != 0) {
++			return (rc);
++		}
++		src += 1;
++		wp += 1;
++		cnt -= 1;
++	};
++
++	return ERR_OK;
++}
+diff --git a/board/ecb_at91/u-boot.lds b/board/ecb_at91/u-boot.lds
+new file mode 100644
+index 0000000..f4fbf96
+--- /dev/null
++++ b/board/ecb_at91/u-boot.lds
+@@ -0,0 +1,57 @@
++/*
++ * (C) Copyright 2002
++ * Gary Jennejohn, DENX Software Engineering, <gj@denx.de>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
++/*OUTPUT_FORMAT("elf32-arm", "elf32-arm", "elf32-arm")*/
++OUTPUT_ARCH(arm)
++ENTRY(_start)
++SECTIONS
++{
++	. = 0x00000000;
++
++	. = ALIGN(4);
++	.text      :
++	{
++	  cpu/arm920t/start.o	(.text)
++	  *(.text)
++	}
++
++	. = ALIGN(4);
++	.rodata : { *(.rodata) }
++
++	. = ALIGN(4);
++	.data : { *(.data) }
++
++	. = ALIGN(4);
++	.got : { *(.got) }
++
++	. = .;
++	__u_boot_cmd_start = .;
++	.u_boot_cmd : { *(.u_boot_cmd) }
++	__u_boot_cmd_end = .;
++
++	. = ALIGN(4);
++	__bss_start = .;
++	.bss : { *(.bss) }
++	_end = .;
++}
+diff --git a/cpu/arm920t/at91rm9200/lxt972.c b/cpu/arm920t/at91rm9200/lxt972.c
+index f12c59c..d5b8e9c 100644
+--- a/cpu/arm920t/at91rm9200/lxt972.c
++++ b/cpu/arm920t/at91rm9200/lxt972.c
+@@ -29,7 +29,7 @@
+ #include <common.h>
+ #include <at91rm9200_net.h>
+ #include <net.h>
+-#include <lxt971a.h>
++#include <lxt972.h>
+ 
+ #ifdef CONFIG_DRIVER_ETHER
+ 
+diff --git a/drivers/dataflash.c b/drivers/dataflash.c
+index 17eb859..2528a46 100644
+--- a/drivers/dataflash.c
++++ b/drivers/dataflash.c
+@@ -26,19 +26,10 @@
+ AT91S_DATAFLASH_INFO dataflash_info[CFG_MAX_DATAFLASH_BANKS];
+ static AT91S_DataFlash DataFlashInst;
+ 
+-int cs[][CFG_MAX_DATAFLASH_BANKS] = {
+-	{CFG_DATAFLASH_LOGIC_ADDR_CS0, 0},	/* Logical adress, CS */
+-	{CFG_DATAFLASH_LOGIC_ADDR_CS3, 3}
+-};
+-
+-/*define the area offsets*/
+-dataflash_protect_t area_list[NB_DATAFLASH_AREA] = {
+-	{0, 0x7fff, FLAG_PROTECT_SET},			/* ROM code */
+-	{0x8000, 0x1ffff, FLAG_PROTECT_SET},		/* u-boot code */
+-	{0x20000, 0x27fff, FLAG_PROTECT_CLEAR},		/* u-boot environment */
+-	{0x28000, 0x1fffff, FLAG_PROTECT_CLEAR},	/* data area size to tune */
+-};
++int (*cs)[CFG_MAX_DATAFLASH_BANKS];
++dataflash_protect_t *area_list;
+ 
++extern void AT91F_DataflashMapInit(void);
+ extern void AT91F_SpiInit (void);
+ extern int AT91F_DataflashProbe (int i, AT91PS_DataflashDesc pDesc);
+ extern int AT91F_DataFlashRead (AT91PS_DataFlash pDataFlash,
+@@ -55,6 +46,7 @@ int AT91F_DataflashInit (void)
+ 	int dfcode;
+ 
+ 	AT91F_SpiInit ();
++	AT91F_DataflashMapInit();
+ 
+ 	for (i = 0; i < CFG_MAX_DATAFLASH_BANKS; i++) {
+ 		dataflash_info[i].Desc.state = IDLE;
+@@ -119,11 +111,18 @@ int AT91F_DataflashInit (void)
+ 			dataflash_info[i].Device.area_list[j].start = area_list[j].start + dataflash_info[i].logical_address;
+ 			dataflash_info[i].Device.area_list[j].end = area_list[j].end + dataflash_info[i].logical_address;
+ 			dataflash_info[i].Device.area_list[j].protected = area_list[j].protected;
++			dataflash_info[i].Device.area_list[j].label = area_list[j].label;
+ 		}
+ 	}
+ 	return (1);
+ }
+ 
++extern void AT91F_MapInit (int _cs[][CFG_MAX_DATAFLASH_BANKS], dataflash_protect_t _area_list[])
++{
++  cs = _cs;
++  area_list = _area_list;
++}
++
+ 
+ void dataflash_print_info (void)
+ {
+@@ -159,11 +158,12 @@ void dataflash_print_info (void)
+ 				dataflash_info[i].Device.pages_size,
+ 				(unsigned int) dataflash_info[i].logical_address);
+ 			for (j=0; j< NB_DATAFLASH_AREA; j++) {
+-				printf ("Area %i:\t%08lX to %08lX %s\n", j,
++				printf ("Area %i:\t%08lX to %08lX %s %s\n", j,
+ 					dataflash_info[i].Device.area_list[j].start,
+ 					dataflash_info[i].Device.area_list[j].end,
+ 					(dataflash_info[i].Device.area_list[j].protected ==
+-					FLAG_PROTECT_SET) ? "(RO)" : "");
++					FLAG_PROTECT_SET) ? "(RO)" : "    ",
++					dataflash_info[i].Device.area_list[j].label);
+ 			}
+ 		}
+ 	}
+diff --git a/include/asm-arm/mach-types.h b/include/asm-arm/mach-types.h
+index 7d7888e..18d1381 100644
+--- a/include/asm-arm/mach-types.h
++++ b/include/asm-arm/mach-types.h
+@@ -737,6 +737,7 @@ extern unsigned int __machine_arch_type;
+ #define MACH_TYPE_CB3RUFC              726
+ #define MACH_TYPE_MP2USB               727
+ #define MACH_TYPE_PDNB3               1002
++#define MACH_TYPE_ECBAT91             1072
+ 
+ #ifdef CONFIG_ARCH_EBSA110
+ # ifdef machine_arch_type
+@@ -9402,6 +9403,18 @@ extern unsigned int __machine_arch_type;
+ # define machine_is_mp2usb()	(0)
+ #endif
+ 
++#ifdef CONFIG_ARCH_ECB_AT91
++# ifdef machine_arch_type
++#  undef machine_arch_type
++#  define machine_arch_type	__machine_arch_type
++# else
++#  define machine_arch_type	MACH_TYPE_ECB_AT91
++# endif
++# define machine_is_ecb_at91()	(machine_arch_type == MACH_TYPE_ECB_AT91)
++#else
++# define machine_is_ecb_at91()	(0)
++#endif
++
+ /*
+  * These have not yet been registered
+  */
+diff --git a/include/configs/at91rm9200dk.h b/include/configs/at91rm9200dk.h
+index 8fad55d..0daa394 100644
+--- a/include/configs/at91rm9200dk.h
++++ b/include/configs/at91rm9200dk.h
+@@ -157,6 +157,8 @@
+ #define CFG_DATAFLASH_LOGIC_ADDR_CS0	0xC0000000	/* Logical adress for CS0 */
+ #define CFG_DATAFLASH_LOGIC_ADDR_CS3	0xD0000000	/* Logical adress for CS3 */
+ 
++#define NB_DATAFLASH_AREA               4  /*number of protected area*/
++
+ #define PHYS_FLASH_1			0x10000000
+ #define PHYS_FLASH_SIZE			0x200000  /* 2 megs main flash */
+ #define CFG_FLASH_BASE			PHYS_FLASH_1
+diff --git a/include/configs/ecb_at91.h b/include/configs/ecb_at91.h
+new file mode 100644
+index 0000000..d0b3faf
+--- /dev/null
++++ b/include/configs/ecb_at91.h
+@@ -0,0 +1,208 @@
++/*
++ * (C) Copyright 2007
++ * emQbit
++ *
++ * Configuration settings for the ECB_AT91 board
++ *
++ * Based in the configuation settings for the AT91RM9200DK board.
++ * By Rick Bronson <rick@efn.org>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef __CONFIG_H
++#define __CONFIG_H
++
++/* ARM asynchronous clock */
++#define AT91C_MAIN_CLOCK	180000000
++#define AT91C_MASTER_CLOCK	60000000
++
++#define AT91_SLOW_CLOCK		32768	/* slow clock */
++
++#define CONFIG_ARM920T		1	/* This is an ARM920T Core	*/
++#define CONFIG_AT91RM9200	1	/* It's an Atmel AT91RM9200 SoC	*/
++#define CONFIG_ECB_AT91		1	/* on an AT91RM9200DK Board	*/
++#undef  CONFIG_USE_IRQ			/* we don't need IRQ/FIQ stuff	*/
++#define USE_920T_MMU		1
++
++#define CONFIG_CMDLINE_TAG	1	/* enable passing of ATAGs	*/
++#define CONFIG_SETUP_MEMORY_TAGS 1
++#define CONFIG_INITRD_TAG	1
++
++#ifndef CONFIG_SKIP_LOWLEVEL_INIT
++#define CFG_LONGHELP
++
++/* flash */
++#define MC_PUIA_VAL	0x00000000
++#define MC_PUP_VAL	0x00000000
++#define MC_PUER_VAL	0x00000000
++#define MC_ASR_VAL	0x00000000
++#define MC_AASR_VAL	0x00000000
++#define EBI_CFGR_VAL	0x00000000
++#define SMC2_CSR_VAL	0x00003284 /* 16bit, 2 TDF, 4 WS */
++
++/* clocks */
++#define PLLAR_VAL	0x20263E04 /* 179.712000 MHz for PCK */
++#define PLLBR_VAL	0x10483E0E /* 48.054857 MHz (divider by 2 for USB) */
++#define MCKR_VAL	0x00000202 /* PCK/3 = MCK Master Clock = 59.904000MHz from PLLA */
++
++/* sdram */
++#define PIOC_ASR_VAL	0xFFFF0000 /* Configure PIOC as peripheral (D16/D31) */
++#define PIOC_BSR_VAL	0x00000000
++#define PIOC_PDR_VAL	0xFFFF0000
++#define EBI_CSA_VAL	0x00000002 /* CS1=SDRAM */
++#define SDRC_CR_VAL	0x2188c155 /* set up the SDRAM */
++#define SDRAM		0x20000000 /* address of the SDRAM */
++#define SDRAM1		0x20000080 /* address of the SDRAM */
++#define SDRAM_VAL	0x00000000 /* value written to SDRAM */
++#define SDRC_MR_VAL	0x00000002 /* Precharge All */
++#define SDRC_MR_VAL1	0x00000004 /* refresh */
++#define SDRC_MR_VAL2	0x00000003 /* Load Mode Register */
++#define SDRC_MR_VAL3	0x00000000 /* Normal Mode */
++#define SDRC_TR_VAL	0x000002E0 /* Write refresh rate */
++#endif	/* CONFIG_SKIP_LOWLEVEL_INIT */
++
++#define CONFIG_BOOTARGS		"mem=32M root=dev/mmcblk0p1 rootfstype=ext3 console=ttyS0,115200n8 rootdelay=1"
++#define CONFIG_ETHADDR		00:00:00:00:00:5b
++#define CONFIG_NETMASK		255.255.255.0
++#define CONFIG_IPADDR		192.168.0.135
++#define CONFIG_SERVERIP		192.168.0.128
++#define CONFIG_BOOTCOMMAND	"bootm C0021840"
++#define CONFIG_BOOTFILE		"ecb_at91.img"
++#define CONFIG_ROOTPATH		"/home/at91/rootfs"
++#define CONFIG_LOADADDR		0x20200000
++
++/*
++ * Size of malloc() pool
++ */
++#define CFG_MALLOC_LEN		(CFG_ENV_SIZE + 128*1024)
++#define CFG_GBL_DATA_SIZE	128	/* size in bytes reserved for initial data */
++#define CONFIG_BAUDRATE		115200
++
++/*
++ * Hardware drivers
++ */
++
++/* define one of these to choose the DBGU, USART0  or USART1 as console */
++#define CONFIG_DBGU
++#undef CONFIG_USART0
++#undef CONFIG_USART1
++
++#undef	CONFIG_HWFLOW			/* don't include RTS/CTS flow control support */
++#undef	CONFIG_MODEM_SUPPORT		/* disable modem initialization stuff */
++
++#define CONFIG_BOOTDELAY	2
++#define CONFIG_ENV_OVERWRITE	1
++
++#define CONFIG_COMMANDS		\
++		((CONFIG_CMD_DFL | CFG_CMD_NET | CFG_CMD_PING | CFG_CMD_DHCP ) & \
++		~(CFG_CMD_BDI | CFG_CMD_FPGA | CFG_CMD_MISC))
++
++/* this must be included AFTER the definition of CONFIG_COMMANDS (if any) */
++#include <cmd_confdefs.h>
++
++#define CONFIG_NR_DRAM_BANKS	1
++#define PHYS_SDRAM		0x20000000
++#define PHYS_SDRAM_SIZE		0x2000000  /* 32 megs */
++
++#define CFG_MEMTEST_START	PHYS_SDRAM
++#define CFG_MEMTEST_END		CFG_MEMTEST_START + PHYS_SDRAM_SIZE - 262144
++
++#define CONFIG_DRIVER_ETHER
++#define CONFIG_NET_RETRY_COUNT	20
++
++#define CONFIG_HAS_DATAFLASH		1
++#define CFG_SPI_WRITE_TOUT		(5*CFG_HZ)
++#define CFG_MAX_DATAFLASH_BANKS		1
++#define CFG_MAX_DATAFLASH_PAGES		4096
++#define CFG_DATAFLASH_LOGIC_ADDR_CS0	0xC0000000	/* Logical adress for CS0 */
++
++/* Remember that you must have the same mapping in the Darrell loader  */
++#define NB_DATAFLASH_AREA		   5  /* protected areas (4 + u-boot env) */
++#define DATAFLASH_MAX_PAGESIZE		1056
++#define DATAFLASH_LOADER_BASE		   (0*DATAFLASH_MAX_PAGESIZE)
++#define DATAFLASH_UBOOT_BASE		  (12*DATAFLASH_MAX_PAGESIZE)
++#define DATAFLASH_ENV_UBOOT_BASE	 (122*DATAFLASH_MAX_PAGESIZE)
++#define DATAFLASH_KERNEL_BASE		 (130*DATAFLASH_MAX_PAGESIZE)
++#define DATAFLASH_FILESYSTEM_BASE	(1664*DATAFLASH_MAX_PAGESIZE)
++
++#define PHYS_FLASH_1			0x10000000
++#define PHYS_FLASH_SIZE			0x200000  /* 2 megs main flash */
++#define CFG_FLASH_BASE			PHYS_FLASH_1
++#define CFG_MAX_FLASH_BANKS		1
++#define CFG_MAX_FLASH_SECT		256
++#define CFG_FLASH_ERASE_TOUT		(2*CFG_HZ) /* Timeout for Flash Erase */
++#define CFG_FLASH_WRITE_TOUT		(2*CFG_HZ) /* Timeout for Flash Write */
++
++#define CFG_ENV_IS_IN_DATAFLASH
++#define CFG_ENV_SIZE			0x2000  /* 8*DATAFLASH_MAX_PAGESIZE - 0x100 */
++#define CFG_ENV_OFFSET			(DATAFLASH_ENV_UBOOT_BASE)
++#define CFG_ENV_ADDR			(CFG_DATAFLASH_LOGIC_ADDR_CS0 + CFG_ENV_OFFSET)
++
++#define CFG_LOAD_ADDR		0x20200000	/* default load address */
++
++#ifdef CONFIG_SKIP_LOWLEVEL_INIT
++#define CFG_BOOT_SIZE		0x00 /* 0 KBytes */
++#define CFG_U_BOOT_BASE		PHYS_FLASH_1
++#define CFG_U_BOOT_SIZE		0x60000 /* 384 KBytes */
++#else
++#define CFG_BOOT_SIZE		0x6000 /* 24 KBytes */
++#define CFG_U_BOOT_BASE		(PHYS_FLASH_1 + 0x10000)
++#define CFG_U_BOOT_SIZE		0x10000 /* 64 KBytes */
++#endif	/* CONFIG_SKIP_LOWLEVEL_INIT */
++
++#define AT91_PROGRAM_MACADDR
++
++#define CFG_BAUDRATE_TABLE	{115200 , 19200, 38400, 57600, 9600 }
++
++#define CFG_PROMPT		"ecb_at91> "	/* Monitor Command Prompt */
++#define CFG_CBSIZE		256		/* Console I/O Buffer Size */
++#define CFG_MAXARGS		16		/* max number of command args */
++#define CFG_PBSIZE		(CFG_CBSIZE+sizeof(CFG_PROMPT)+16) /* Print Buffer Size */
++
++#ifndef __ASSEMBLY__
++/*-----------------------------------------------------------------------
++ * Board specific extension for bd_info
++ *
++ * This structure is embedded in the global bd_info (bd_t) structure
++ * and can be used by the board specific code (eg board/...)
++ */
++
++struct bd_info_ext {
++	/* helper variable for board environment handling
++	 *
++	 * env_crc_valid == 0    =>   uninitialised
++	 * env_crc_valid  > 0    =>   environment crc in flash is valid
++	 * env_crc_valid  < 0    =>   environment crc in flash is invalid
++	 */
++	int env_crc_valid;
++};
++#endif
++
++#define CFG_HZ 1000
++#define CFG_HZ_CLOCK AT91C_MASTER_CLOCK/2	/* AT91C_TC0_CMR is implicitly set to */
++					/* AT91C_TC_TIMER_DIV1_CLOCK */
++
++#define CONFIG_STACKSIZE	(32*1024)	/* regular stack */
++
++#ifdef CONFIG_USE_IRQ
++#error CONFIG_USE_IRQ not supported
++#endif
++
++#endif
+diff --git a/include/dataflash.h b/include/dataflash.h
+index 650454e..d7ec7eb 100644
+--- a/include/dataflash.h
++++ b/include/dataflash.h
+@@ -37,14 +37,12 @@
+ #include <asm/arch/hardware.h>
+ #include "config.h"
+ 
+-/*number of protected area*/
+-#define NB_DATAFLASH_AREA	4
+-
+ /*define the area structure*/
+ typedef struct {
+ 	unsigned long start;
+ 	unsigned long end;
+ 	unsigned char protected;
++	char *label;
+ } dataflash_protect_t;
+ 
+ typedef unsigned int AT91S_DataFlashStatus;
+@@ -174,5 +172,6 @@ extern int read_dataflash (unsigned long addr, unsigned long size, char *result)
+ extern int write_dataflash (unsigned long addr, unsigned long dest, unsigned long size);
+ extern void dataflash_print_info (void);
+ extern void dataflash_perror (int err);
++extern void AT91F_MapInit (int cs[][CFG_MAX_DATAFLASH_BANKS], dataflash_protect_t area_list[]); /* board initialization */
+ 
+ #endif
+diff --git a/include/lxt972.h b/include/lxt972.h
+new file mode 100644
+index 0000000..d0ad8d6
+--- /dev/null
++++ b/include/lxt972.h
+@@ -0,0 +1,35 @@
++/***********************************************************************
++ *
++ * Copyright (C) 2007 emQbit
++ * Nelson Castillo, nelson@emqbit.com
++ *
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ *
++ ***********************************************************************/
++
++#ifndef __LXT972_H__
++#define __LXT972_H__
++
++#include <lxt971a.h>
++
++unsigned int lxt972_IsPhyConnected (AT91PS_EMAC p_mac);                                                          
++UCHAR lxt972_GetLinkSpeed (AT91PS_EMAC p_mac);
++UCHAR lxt972_InitPhy (AT91PS_EMAC p_mac);
++UCHAR lxt972_AutoNegotiate (AT91PS_EMAC p_mac, int *status); 
++
++#endif
++
+diff --git a/lib_arm/board.c b/lib_arm/board.c
+index babc254..9e4999e 100644
+--- a/lib_arm/board.c
++++ b/lib_arm/board.c
+@@ -374,6 +374,10 @@ void start_armboot (void)
+ 	}
+ #endif /* CONFIG_DRIVER_SMC91111 || CONFIG_DRIVER_LAN91C96 */
+ 
++#ifdef AT91_PROGRAM_MACADDR
++	eth_init(gd->bd); /* quick and dirty patch to set MAC address */
++#endif /* AT91_PROGRAM_MACADDR */
++
+ 	/* Initialize from environment */
+ 	if ((s = getenv ("loadaddr")) != NULL) {
+ 		load_addr = simple_strtoul (s, NULL, 16);

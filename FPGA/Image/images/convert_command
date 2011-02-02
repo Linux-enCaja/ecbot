@@ -1,0 +1,2 @@
+ scp root@192.168.0.104:test.bin .
+ convert -depth 8 -size 128x96 rgb:test.bin image.png;gqview image.png &

@@ -1,0 +1,3 @@
+NET clk 		LOC = "P87";
+NET led 		LOC = "P97";
+NET led_lcd LOC = "P80";

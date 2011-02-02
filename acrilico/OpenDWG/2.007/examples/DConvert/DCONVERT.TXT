@@ -1,0 +1,7 @@
+DConvertCon is the console version which converts drawings and dxf files into other versions and kinds.
+
+Help is found by running DConvertCon with no parameters.
+
+---------------------------------------------
+
+DconvertWin is the Windows GUI version.  

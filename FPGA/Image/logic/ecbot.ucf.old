@@ -1,0 +1,77 @@
+NET clk   LOC = "P87";
+NET led   LOC = "P97";  
+
+NET reset           LOC = "P34"; # A24 = PC8 Active Hi 
+NET capture_trigger LOC = "P32"; # A25 = PC9 Active Hi
+NET capture_done    LOC = "P35"; # A23 = PC7 Active Hi
+
+#ADDRESS BUS
+#NET "addr<14>" LOC = "P32";
+#NET "addr<13>" LOC = "P34";
+#NET "addr<12>" LOC = "P35";
+
+NET "addr<11>" LOC = "P36";  #A22
+NET "addr<10>" LOC = "P37";  #A21
+NET "addr<9>"  LOC = "P38";  #A20
+NET "addr<8>"  LOC = "P39";  #A19
+NET "addr<7>"  LOC = "P40";  #A18
+NET "addr<6>"  LOC = "P42";  #A17
+NET "addr<5>"  LOC = "P43";  #A16
+NET "addr<4>"  LOC = "P44";  #A15
+NET "addr<3>"  LOC = "P47";  #A14
+NET "addr<2>"  LOC = "P48";  #A13
+NET "addr<1>"  LOC = "P49";  #A12
+NET "addr<0>"  LOC = "P50";  #A11
+
+#DATA BUS
+NET "sram_data<15>" LOC = "P1";
+NET "sram_data<14>" LOC = "P2";
+NET "sram_data<13>" LOC = "P4";
+NET "sram_data<12>" LOC = "P5";
+NET "sram_data<11>" LOC = "P8";
+NET "sram_data<10>" LOC = "P9";
+NET "sram_data<9>"  LOC = "P11";
+NET "sram_data<8>"  LOC = "P12";
+NET "sram_data<7>"  LOC = "P13";
+NET "sram_data<6>"  LOC = "P14";
+NET "sram_data<5>"  LOC = "P15";
+NET "sram_data<4>"  LOC = "P16";
+NET "sram_data<3>"  LOC = "P17";
+NET "sram_data<2>"  LOC = "P21";
+NET "sram_data<1>"  LOC = "P22";
+NET "sram_data<0>"  LOC = "P23";
+
+#CONTROL BUS
+NET "nwe"   LOC = "P27";
+NET "noe"   LOC = "P28";
+NET "ncs"   LOC = "P30";
+
+#CAMERA INTERFACE
+NET "crst"      LOC = "P53";
+NET "snap"      LOC = "P54";
+NET "cvsync"    LOC = "P55";
+NET "chsync"    LOC = "P59";
+NET "cvclk"     LOC = "P61";
+NET "cmclk"     LOC = "P60";
+#NET "fsda"      LOC = "P74";
+#NET "fscl"      LOC = "P75";
+NET "ycbcr<7>"  LOC = "P71";
+NET "ycbcr<6>"  LOC = "P72";
+NET "ycbcr<5>"  LOC = "P67";
+NET "ycbcr<4>"  LOC = "P68";
+NET "ycbcr<3>"  LOC = "P64";
+NET "ycbcr<2>"  LOC = "P65";
+NET "ycbcr<1>"  LOC = "P62";
+NET "ycbcr<0>"  LOC = "P63";
+
+#General Purpose IO Port
+NET "P<0>"  LOC = "P92";   # FIO0
+NET "P<1>"  LOC = "P96";   # FIO1
+NET "P<2>"  LOC = "P90";   # FIO2
+NET "P<3>"  LOC = "P91";   # FIO3
+NET "P<4>"  LOC = "P88";   # FIO4
+NET "P<5>"  LOC = "P89";   # FIO5
+NET "P<6>"  LOC = "P85";   # FIO6
+NET "P<7>"  LOC = "P86";   # FIO7
+NET "P<8>"  LOC = "P79";   # FIO8
+NET "P<9>"  LOC = "P80";   # FIO9

@@ -1,0 +1,66 @@
+#include <iostream>
+#include <ostream>
+#include <fstream>
+#include <math.h>
+#include <string>
+
+using namespace std;
+#include <time.h>
+#include <stdlib.h>
+#include "capture.h"
+#include "pngwriter.h"
+
+int
+main(int argc, char* argv[]){
+
+  unsigned long  tmp=0;
+  unsigned short i, j, w=166, h=251;
+  unsigned short rgb[w*h*3];
+
+  ofstream ofs("test.bin");
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// WARNING!! Please set the EBI port  first
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  pio_map(GPIOC_BASE,MAP_SIZE_PIO);
+  pio_setup();
+  pio_out(RESET,1);
+  pio_out(RESET,0);
+
+  MemMap fpga(FPGA_BASE, MAP_SIZE);
+
+   pio_out(CAPTURE,1);
+   pio_out(CAPTURE,0);
+
+  for(j=0; j < 2; j++){
+     while( pio_in(C_DONE) == 0 ) {}
+    for(i=0; i < 3*w; i++){
+      tmp = w*j*3 + i;
+      rgb[tmp] = fpga.get(i);
+      printf("%x,%x \t", tmp, i);
+    }
+    pio_out(CAPTURE,1);
+    pio_out(CAPTURE,0);
+  }
+
+//    pngwriter image(332, 251, 0, "cain.png");
+// 
+//    for (unsigned short  y = 0; y < 251; ++y)
+//    {
+//      for (unsigned short x = 0; x < 332; ++x)
+//      {
+//        image.plot(x, y, rgb[3*x+332*y*3], rgb[3*x+1+332*y*3], rgb[3*x+2+332*y*3]);
+//      }
+//    }
+// 
+// 
+//    image.circle(100, 100, 20,  255, 0, 0);
+//    image.setgamma(0.5);
+//    image.close();
+// 
+
+   ofs.write((const char*)rgb,w*h*3*2);
+   cout << "Done.." << "\n "  << endl;
+   return 0;
+//  write(fd_file, rgb, w*h*3);
+}

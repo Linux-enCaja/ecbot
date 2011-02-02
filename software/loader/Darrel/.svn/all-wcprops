@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/333/src/emqbit/ECB_AT91_V2/darrell-loader
+END
+u-boot.lds
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/u-boot.lds
+END
+Changelog
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/123/src/emqbit/ECB_AT91_V2/darrell-loader/Changelog
+END
+COPYING
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/COPYING
+END
+config.mk
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/config.mk
+END
+CREDITS
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/CREDITS
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/110/src/emqbit/ECB_AT91_V2/darrell-loader/Makefile
+END

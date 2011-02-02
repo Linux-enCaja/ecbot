@@ -1,0 +1,24 @@
+#!/bin/sh                                                                                                                                                    
+#                                                                                                                                                            
+# Script that program an ECBOT's AVR                                                                                                                         
+# usage: avr_prog [Chip_Number] [programming file]                                                                                                           
+if [ $1 -ge 5 ]                                                                                                                                              
+then                                                                                                                                                         
+  echo "Wrong device number"                                                                                                                                 
+  exit 1                                                                                                                                                     
+fi                                                                                                                                                           
+if [ $1 =  e ]                                                                                                                                               
+then                                                                                                                                                         
+  echo "Erasing all Chips..."                                                                                                                                
+  for (( i = 0; i < 5; i++ ))                                                                                                                                
+  do                                                                                                                                                         
+    uisp -dlpt=/dev/robostix$i -dpart=atmega161 --erase                                                                                                      
+  done                                                                                                                                                       
+  exit 1                                                                                                                                                     
+fi                                                                                                                                                           
+                                                                                                                                                             
+echo "Erasing Chip $1  using /dev/robostix$1"                                                                                                                
+uisp -dlpt=/dev/robostix$1 -dpart=atmega161 --erase                                                                                                          
+echo "Programming Chip $1  using /dev/robostix$1"                                                                                                            
+uisp -dlpt=/dev/robostix$1 -dpart=atmega161 --upload if=$2                                                                                                   
+echo "done" 

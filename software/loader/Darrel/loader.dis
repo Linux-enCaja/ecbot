@@ -1,0 +1,4314 @@
+
+loader:     file format elf32-littlearm
+
+Disassembly of section .text:
+
+00000000 <_start>:
+ */
+
+
+.globl _start
+_start:	b       reset
+       0:	ea000012 	b	50 <reset>
+	ldr	pc, _undefined_instruction
+       4:	e59ff014 	ldr	pc, [pc, #20]	; 20 <_undefined_instruction>
+	ldr	pc, _software_interrupt
+       8:	e59ff014 	ldr	pc, [pc, #20]	; 24 <_software_interrupt>
+	ldr	pc, _prefetch_abort
+       c:	e59ff014 	ldr	pc, [pc, #20]	; 28 <_prefetch_abort>
+	ldr	pc, _data_abort
+      10:	e59ff014 	ldr	pc, [pc, #20]	; 2c <_data_abort>
+	ldr	pc, _not_used
+      14:	e59ff014 	ldr	pc, [pc, #20]	; 30 <_not_used>
+	ldr	pc, _irq
+      18:	e59ff014 	ldr	pc, [pc, #20]	; 34 <_irq>
+	ldr	pc, _fiq
+      1c:	e59ff014 	ldr	pc, [pc, #20]	; 38 <_fiq>
+
+00000020 <_undefined_instruction>:
+      20:	000000e0 	andeq	r0, r0, r0, ror #1
+
+00000024 <_software_interrupt>:
+      24:	00000140 	andeq	r0, r0, r0, asr #2
+
+00000028 <_prefetch_abort>:
+      28:	000001a0 	andeq	r0, r0, r0, lsr #3
+
+0000002c <_data_abort>:
+      2c:	00000200 	andeq	r0, r0, r0, lsl #4
+
+00000030 <_not_used>:
+      30:	00000260 	andeq	r0, r0, r0, ror #4
+
+00000034 <_irq>:
+      34:	000002c0 	andeq	r0, r0, r0, asr #5
+
+00000038 <_fiq>:
+      38:	00000320 	andeq	r0, r0, r0, lsr #6
+      3c:	deadbeef 	cdple	14, 10, cr11, cr13, cr15, {7}
+
+00000040 <_TEXT_BASE>:
+      40:	00000000 	andeq	r0, r0, r0
+
+00000044 <_armboot_start>:
+      44:	00000000 	andeq	r0, r0, r0
+
+00000048 <_bss_start>:
+      48:	00002558 	andeq	r2, r0, r8, asr r5
+
+0000004c <_bss_end>:
+      4c:	000025e4 	andeq	r2, r0, r4, ror #11
+
+00000050 <reset>:
+
+_undefined_instruction:	.word undefined_instruction
+_software_interrupt:	.word software_interrupt
+_prefetch_abort:	.word prefetch_abort
+_data_abort:		.word data_abort
+_not_used:		.word not_used
+_irq:			.word irq
+_fiq:			.word fiq
+
+	.balignl 16,0xdeadbeef
+
+
+/*
+ *************************************************************************
+ *
+ * Startup Code (reset vector)
+ *
+ * do important init only if we don't start from memory!
+ * relocate armboot to ram
+ * setup stack
+ * jump to second stage
+ *
+ *************************************************************************
+ */
+
+_TEXT_BASE:
+	.word	TEXT_BASE
+
+.globl _armboot_start
+_armboot_start:
+	.word _start
+
+/*
+ * These are defined in the board-specific linker script.
+ */
+.globl _bss_start
+_bss_start:
+	.word __bss_start
+
+.globl _bss_end
+_bss_end:
+	.word _end
+
+/*
+ * the actual reset code
+ */
+
+reset:
+	/*
+	 * set the cpu to SVC32 mode
+	 */
+	mrs     r0,cpsr
+      50:	e10f0000 	mrs	r0, CPSR
+	bic     r0,r0,#0x1f
+      54:	e3c0001f 	bic	r0, r0, #31	; 0x1f
+	orr     r0,r0,#0x13
+      58:	e3800013 	orr	r0, r0, #19	; 0x13
+	msr     cpsr,r0
+      5c:	e129f000 	msr	CPSR_fc, r0
+
+	/* Disable "Fast Bus Mode" - set to async */
+	mrc p15,0,r0,c1,c0,0  
+      60:	ee110f10 	mrc	15, 0, r0, cr1, cr0, {0}
+	orr r0,r0,#0xC0000000   
+      64:	e3800103 	orr	r0, r0, #-1073741824	; 0xc0000000
+	mcr p15,0,r0,c1,c0,0    
+      68:	ee010f10 	mcr	15, 0, r0, cr1, cr0, {0}
+	/*
+	 * relocate exeception table
+	 */
+	ldr	r0, =_start
+      6c:	e59f0310 	ldr	r0, [pc, #784]	; 384 <reset_cpu+0x4>
+	ldr	r1, =0x0
+      70:	e3a01000 	mov	r1, #0	; 0x0
+	mov	r2, #16
+      74:	e3a02010 	mov	r2, #16	; 0x10
+
+00000078 <copyex>:
+copyex:
+	subs	r2, r2, #1
+      78:	e2522001 	subs	r2, r2, #1	; 0x1
+	ldr	r3, [r0], #4
+      7c:	e4903004 	ldr	r3, [r0], #4
+	str	r3, [r1], #4
+      80:	e4813004 	str	r3, [r1], #4
+	bne	copyex
+      84:	1afffffb 	bne	78 <copyex>
+
+	bl      cpu_init_crit
+      88:	eb00000c 	bl	c0 <cpu_init_crit>
+
+0000008c <stack_setup>:
+
+	/* Set up the stack						    */
+stack_setup:
+	ldr	r0, _TEXT_BASE		/* upper 128 KiB: relocated uboot   */
+      8c:	e51f0054 	ldr	r0, [pc, #-84]	; 40 <_TEXT_BASE>
+	add	r0, r0, #16384		/* malloc area                      */
+      90:	e2800901 	add	r0, r0, #16384	; 0x4000
+	sub	sp, r0, #256		/* leave 3 words for abort-stack    */
+      94:	e240dc01 	sub	sp, r0, #256	; 0x100
+
+00000098 <clear_bss>:
+
+clear_bss:
+	ldr	r0, _bss_start		/* find start of bss segment        */
+      98:	e51f0058 	ldr	r0, [pc, #-88]	; 48 <_bss_start>
+	add	r0, r0, #4		/* start at first byte of bss       */
+      9c:	e2800004 	add	r0, r0, #4	; 0x4
+	ldr	r1, _bss_end		/* stop here                        */
+      a0:	e51f105c 	ldr	r1, [pc, #-92]	; 4c <_bss_end>
+	mov 	r2, #0x00000000		/* clear                            */
+      a4:	e3a02000 	mov	r2, #0	; 0x0
+
+000000a8 <clbss_l>:
+
+clbss_l:str	r2, [r0]		/* clear loop...                    */
+      a8:	e5802000 	str	r2, [r0]
+	add	r0, r0, #4
+      ac:	e2800004 	add	r0, r0, #4	; 0x4
+	cmp	r0, r1
+      b0:	e1500001 	cmp	r0, r1
+	bne	clbss_l
+      b4:	1afffffb 	bne	a8 <clbss_l>
+
+	ldr pc,_start_armboot
+      b8:	e51ff004 	ldr	pc, [pc, #-4]	; bc <_start_armboot>
+
+000000bc <_start_armboot>:
+      bc:	00000700 	andeq	r0, r0, r0, lsl #14
+
+000000c0 <cpu_init_crit>:
+
+_start_armboot: .word start_armboot
+
+/*
+ *************************************************************************
+ *
+ * CPU_init_critical registers
+ *
+ *************************************************************************
+ */
+
+cpu_init_crit:
+	# actually do nothing for now!
+	mov	pc, lr
+      c0:	e1a0f00e 	mov	pc, lr
+	...
+
+000000e0 <undefined_instruction>:
+
+
+/*
+ *************************************************************************
+ *
+ * Interrupt handling
+ *
+ *************************************************************************
+ */
+
+@
+@ IRQ stack frame.
+@
+#define S_FRAME_SIZE	72
+
+#define S_OLD_R0	68
+#define S_PSR		64
+#define S_PC		60
+#define S_LR		56
+#define S_SP		52
+
+#define S_IP		48
+#define S_FP		44
+#define S_R10		40
+#define S_R9		36
+#define S_R8		32
+#define S_R7		28
+#define S_R6		24
+#define S_R5		20
+#define S_R4		16
+#define S_R3		12
+#define S_R2		8
+#define S_R1		4
+#define S_R0		0
+
+#define MODE_SVC 0x13
+#define I_BIT	 0x80
+
+/*
+ * use bad_save_user_regs for abort/prefetch/undef/swi ...
+ * use irq_save_user_regs / irq_restore_user_regs for IRQ/FIQ handling
+ */
+
+	.macro	bad_save_user_regs
+	sub	sp, sp, #S_FRAME_SIZE
+	stmia	sp, {r0 - r12}			@ Calling r0-r12
+	add     r8, sp, #S_PC
+
+	ldr	r2, _armboot_start
+	sub	r2, r2, #(CONFIG_STACKSIZE+CFG_MALLOC_LEN)
+	sub	r2, r2, #(CFG_GBL_DATA_SIZE+8)  @ set base 2 words into abort stack
+	ldmia	r2, {r2 - r4}                   @ get pc, cpsr, old_r0
+	add	r0, sp, #S_FRAME_SIZE		@ restore sp_SVC
+
+	add	r5, sp, #S_SP
+	mov	r1, lr
+	stmia	r5, {r0 - r4}                   @ save sp_SVC, lr_SVC, pc, cpsr, old_r
+	mov	r0, sp
+	.endm
+
+	.macro	irq_save_user_regs
+	sub	sp, sp, #S_FRAME_SIZE
+	stmia	sp, {r0 - r12}			@ Calling r0-r12
+	add     r8, sp, #S_PC
+	stmdb   r8, {sp, lr}^                   @ Calling SP, LR
+	str     lr, [r8, #0]                    @ Save calling PC
+	mrs     r6, spsr
+	str     r6, [r8, #4]                    @ Save CPSR
+	str     r0, [r8, #8]                    @ Save OLD_R0
+	mov	r0, sp
+	.endm
+
+	.macro	irq_restore_user_regs
+	ldmia	sp, {r0 - lr}^			@ Calling r0 - lr
+	mov	r0, r0
+	ldr	lr, [sp, #S_PC]			@ Get PC
+	add	sp, sp, #S_FRAME_SIZE
+	subs	pc, lr, #4			@ return & move spsr_svc into cpsr
+	.endm
+
+	.macro get_bad_stack
+	ldr	r13, _armboot_start		@ setup our mode stack
+	sub	r13, r13, #(CONFIG_STACKSIZE+CFG_MALLOC_LEN)
+	sub	r13, r13, #(CFG_GBL_DATA_SIZE+8) @ reserved a couple spots in abort stack
+
+	str	lr, [r13]			@ save caller lr / spsr
+	mrs	lr, spsr
+	str     lr, [r13, #4]
+
+	mov	r13, #MODE_SVC			@ prepare SVC-Mode
+	msr	spsr_c, r13
+	mov	lr, pc
+	movs	pc, lr
+	.endm
+
+	.macro get_irq_stack			@ setup IRQ stack
+	ldr	sp, IRQ_STACK_START
+	.endm
+
+	.macro get_fiq_stack			@ setup FIQ stack
+	ldr	sp, FIQ_STACK_START
+	.endm
+
+/*
+ * exception handlers
+ */
+	.align  5
+undefined_instruction:
+	get_bad_stack
+      e0:	e51fd0a4 	ldr	sp, [pc, #-164]	; 44 <_armboot_start>
+      e4:	e24dd922 	sub	sp, sp, #557056	; 0x88000
+      e8:	e24dd088 	sub	sp, sp, #136	; 0x88
+      ec:	e58de000 	str	lr, [sp]
+      f0:	e14fe000 	mrs	lr, SPSR
+      f4:	e58de004 	str	lr, [sp, #4]
+      f8:	e3a0d013 	mov	sp, #19	; 0x13
+      fc:	e161f00d 	msr	SPSR_c, sp
+     100:	e1a0e00f 	mov	lr, pc
+     104:	e1b0f00e 	movs	pc, lr
+	bad_save_user_regs
+     108:	e24dd048 	sub	sp, sp, #72	; 0x48
+     10c:	e88d1fff 	stmia	sp, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip}
+     110:	e28d803c 	add	r8, sp, #60	; 0x3c
+     114:	e51f20d8 	ldr	r2, [pc, #-216]	; 44 <_armboot_start>
+     118:	e2422922 	sub	r2, r2, #557056	; 0x88000
+     11c:	e2422088 	sub	r2, r2, #136	; 0x88
+     120:	e892001c 	ldmia	r2, {r2, r3, r4}
+     124:	e28d0048 	add	r0, sp, #72	; 0x48
+     128:	e28d5034 	add	r5, sp, #52	; 0x34
+     12c:	e1a0100e 	mov	r1, lr
+     130:	e885001f 	stmia	r5, {r0, r1, r2, r3, r4}
+     134:	e1a0000d 	mov	r0, sp
+	bl 	do_undefined_instruction
+     138:	eb000648 	bl	1a60 <do_undefined_instruction>
+     13c:	00000000 	andeq	r0, r0, r0
+
+00000140 <software_interrupt>:
+
+	.align	5
+software_interrupt:
+	get_bad_stack
+     140:	e51fd104 	ldr	sp, [pc, #-260]	; 44 <_armboot_start>
+     144:	e24dd922 	sub	sp, sp, #557056	; 0x88000
+     148:	e24dd088 	sub	sp, sp, #136	; 0x88
+     14c:	e58de000 	str	lr, [sp]
+     150:	e14fe000 	mrs	lr, SPSR
+     154:	e58de004 	str	lr, [sp, #4]
+     158:	e3a0d013 	mov	sp, #19	; 0x13
+     15c:	e161f00d 	msr	SPSR_c, sp
+     160:	e1a0e00f 	mov	lr, pc
+     164:	e1b0f00e 	movs	pc, lr
+	bad_save_user_regs
+     168:	e24dd048 	sub	sp, sp, #72	; 0x48
+     16c:	e88d1fff 	stmia	sp, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip}
+     170:	e28d803c 	add	r8, sp, #60	; 0x3c
+     174:	e51f2138 	ldr	r2, [pc, #-312]	; 44 <_armboot_start>
+     178:	e2422922 	sub	r2, r2, #557056	; 0x88000
+     17c:	e2422088 	sub	r2, r2, #136	; 0x88
+     180:	e892001c 	ldmia	r2, {r2, r3, r4}
+     184:	e28d0048 	add	r0, sp, #72	; 0x48
+     188:	e28d5034 	add	r5, sp, #52	; 0x34
+     18c:	e1a0100e 	mov	r1, lr
+     190:	e885001f 	stmia	r5, {r0, r1, r2, r3, r4}
+     194:	e1a0000d 	mov	r0, sp
+	bl 	do_software_interrupt
+     198:	eb00063b 	bl	1a8c <do_software_interrupt>
+     19c:	00000000 	andeq	r0, r0, r0
+
+000001a0 <prefetch_abort>:
+
+	.align	5
+prefetch_abort:
+	get_bad_stack
+     1a0:	e51fd164 	ldr	sp, [pc, #-356]	; 44 <_armboot_start>
+     1a4:	e24dd922 	sub	sp, sp, #557056	; 0x88000
+     1a8:	e24dd088 	sub	sp, sp, #136	; 0x88
+     1ac:	e58de000 	str	lr, [sp]
+     1b0:	e14fe000 	mrs	lr, SPSR
+     1b4:	e58de004 	str	lr, [sp, #4]
+     1b8:	e3a0d013 	mov	sp, #19	; 0x13
+     1bc:	e161f00d 	msr	SPSR_c, sp
+     1c0:	e1a0e00f 	mov	lr, pc
+     1c4:	e1b0f00e 	movs	pc, lr
+	bad_save_user_regs
+     1c8:	e24dd048 	sub	sp, sp, #72	; 0x48
+     1cc:	e88d1fff 	stmia	sp, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip}
+     1d0:	e28d803c 	add	r8, sp, #60	; 0x3c
+     1d4:	e51f2198 	ldr	r2, [pc, #-408]	; 44 <_armboot_start>
+     1d8:	e2422922 	sub	r2, r2, #557056	; 0x88000
+     1dc:	e2422088 	sub	r2, r2, #136	; 0x88
+     1e0:	e892001c 	ldmia	r2, {r2, r3, r4}
+     1e4:	e28d0048 	add	r0, sp, #72	; 0x48
+     1e8:	e28d5034 	add	r5, sp, #52	; 0x34
+     1ec:	e1a0100e 	mov	r1, lr
+     1f0:	e885001f 	stmia	r5, {r0, r1, r2, r3, r4}
+     1f4:	e1a0000d 	mov	r0, sp
+	bl 	do_prefetch_abort
+     1f8:	eb00062e 	bl	1ab8 <do_prefetch_abort>
+     1fc:	00000000 	andeq	r0, r0, r0
+
+00000200 <data_abort>:
+
+	.align	5
+data_abort:
+	get_bad_stack
+     200:	e51fd1c4 	ldr	sp, [pc, #-452]	; 44 <_armboot_start>
+     204:	e24dd922 	sub	sp, sp, #557056	; 0x88000
+     208:	e24dd088 	sub	sp, sp, #136	; 0x88
+     20c:	e58de000 	str	lr, [sp]
+     210:	e14fe000 	mrs	lr, SPSR
+     214:	e58de004 	str	lr, [sp, #4]
+     218:	e3a0d013 	mov	sp, #19	; 0x13
+     21c:	e161f00d 	msr	SPSR_c, sp
+     220:	e1a0e00f 	mov	lr, pc
+     224:	e1b0f00e 	movs	pc, lr
+	bad_save_user_regs
+     228:	e24dd048 	sub	sp, sp, #72	; 0x48
+     22c:	e88d1fff 	stmia	sp, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip}
+     230:	e28d803c 	add	r8, sp, #60	; 0x3c
+     234:	e51f21f8 	ldr	r2, [pc, #-504]	; 44 <_armboot_start>
+     238:	e2422922 	sub	r2, r2, #557056	; 0x88000
+     23c:	e2422088 	sub	r2, r2, #136	; 0x88
+     240:	e892001c 	ldmia	r2, {r2, r3, r4}
+     244:	e28d0048 	add	r0, sp, #72	; 0x48
+     248:	e28d5034 	add	r5, sp, #52	; 0x34
+     24c:	e1a0100e 	mov	r1, lr
+     250:	e885001f 	stmia	r5, {r0, r1, r2, r3, r4}
+     254:	e1a0000d 	mov	r0, sp
+	bl 	do_data_abort
+     258:	eb000621 	bl	1ae4 <do_data_abort>
+     25c:	00000000 	andeq	r0, r0, r0
+
+00000260 <not_used>:
+
+	.align	5
+not_used:
+	get_bad_stack
+     260:	e51fd224 	ldr	sp, [pc, #-548]	; 44 <_armboot_start>
+     264:	e24dd922 	sub	sp, sp, #557056	; 0x88000
+     268:	e24dd088 	sub	sp, sp, #136	; 0x88
+     26c:	e58de000 	str	lr, [sp]
+     270:	e14fe000 	mrs	lr, SPSR
+     274:	e58de004 	str	lr, [sp, #4]
+     278:	e3a0d013 	mov	sp, #19	; 0x13
+     27c:	e161f00d 	msr	SPSR_c, sp
+     280:	e1a0e00f 	mov	lr, pc
+     284:	e1b0f00e 	movs	pc, lr
+	bad_save_user_regs
+     288:	e24dd048 	sub	sp, sp, #72	; 0x48
+     28c:	e88d1fff 	stmia	sp, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip}
+     290:	e28d803c 	add	r8, sp, #60	; 0x3c
+     294:	e51f2258 	ldr	r2, [pc, #-600]	; 44 <_armboot_start>
+     298:	e2422922 	sub	r2, r2, #557056	; 0x88000
+     29c:	e2422088 	sub	r2, r2, #136	; 0x88
+     2a0:	e892001c 	ldmia	r2, {r2, r3, r4}
+     2a4:	e28d0048 	add	r0, sp, #72	; 0x48
+     2a8:	e28d5034 	add	r5, sp, #52	; 0x34
+     2ac:	e1a0100e 	mov	r1, lr
+     2b0:	e885001f 	stmia	r5, {r0, r1, r2, r3, r4}
+     2b4:	e1a0000d 	mov	r0, sp
+	bl 	do_not_used
+     2b8:	eb00061a 	bl	1b28 <do_not_used>
+     2bc:	00000000 	andeq	r0, r0, r0
+
+000002c0 <irq>:
+
+#ifdef CONFIG_USE_IRQ
+
+	.align	5
+irq:
+	get_irq_stack
+	irq_save_user_regs
+	bl 	do_irq
+	irq_restore_user_regs
+
+	.align	5
+fiq:
+	get_fiq_stack
+	/* someone ought to write a more effiction fiq_save_user_regs */
+	irq_save_user_regs
+	bl 	do_fiq
+	irq_restore_user_regs
+
+#else
+
+	.align	5
+irq:
+	get_bad_stack
+     2c0:	e51fd284 	ldr	sp, [pc, #-644]	; 44 <_armboot_start>
+     2c4:	e24dd922 	sub	sp, sp, #557056	; 0x88000
+     2c8:	e24dd088 	sub	sp, sp, #136	; 0x88
+     2cc:	e58de000 	str	lr, [sp]
+     2d0:	e14fe000 	mrs	lr, SPSR
+     2d4:	e58de004 	str	lr, [sp, #4]
+     2d8:	e3a0d013 	mov	sp, #19	; 0x13
+     2dc:	e161f00d 	msr	SPSR_c, sp
+     2e0:	e1a0e00f 	mov	lr, pc
+     2e4:	e1b0f00e 	movs	pc, lr
+	bad_save_user_regs
+     2e8:	e24dd048 	sub	sp, sp, #72	; 0x48
+     2ec:	e88d1fff 	stmia	sp, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip}
+     2f0:	e28d803c 	add	r8, sp, #60	; 0x3c
+     2f4:	e51f22b8 	ldr	r2, [pc, #-696]	; 44 <_armboot_start>
+     2f8:	e2422922 	sub	r2, r2, #557056	; 0x88000
+     2fc:	e2422088 	sub	r2, r2, #136	; 0x88
+     300:	e892001c 	ldmia	r2, {r2, r3, r4}
+     304:	e28d0048 	add	r0, sp, #72	; 0x48
+     308:	e28d5034 	add	r5, sp, #52	; 0x34
+     30c:	e1a0100e 	mov	r1, lr
+     310:	e885001f 	stmia	r5, {r0, r1, r2, r3, r4}
+     314:	e1a0000d 	mov	r0, sp
+	bl 	do_irq
+     318:	eb000618 	bl	1b80 <do_irq>
+     31c:	00000000 	andeq	r0, r0, r0
+
+00000320 <fiq>:
+
+	.align	5
+fiq:
+	get_bad_stack
+     320:	e51fd2e4 	ldr	sp, [pc, #-740]	; 44 <_armboot_start>
+     324:	e24dd922 	sub	sp, sp, #557056	; 0x88000
+     328:	e24dd088 	sub	sp, sp, #136	; 0x88
+     32c:	e58de000 	str	lr, [sp]
+     330:	e14fe000 	mrs	lr, SPSR
+     334:	e58de004 	str	lr, [sp, #4]
+     338:	e3a0d013 	mov	sp, #19	; 0x13
+     33c:	e161f00d 	msr	SPSR_c, sp
+     340:	e1a0e00f 	mov	lr, pc
+     344:	e1b0f00e 	movs	pc, lr
+	bad_save_user_regs
+     348:	e24dd048 	sub	sp, sp, #72	; 0x48
+     34c:	e88d1fff 	stmia	sp, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip}
+     350:	e28d803c 	add	r8, sp, #60	; 0x3c
+     354:	e51f2318 	ldr	r2, [pc, #-792]	; 44 <_armboot_start>
+     358:	e2422922 	sub	r2, r2, #557056	; 0x88000
+     35c:	e2422088 	sub	r2, r2, #136	; 0x88
+     360:	e892001c 	ldmia	r2, {r2, r3, r4}
+     364:	e28d0048 	add	r0, sp, #72	; 0x48
+     368:	e28d5034 	add	r5, sp, #52	; 0x34
+     36c:	e1a0100e 	mov	r1, lr
+     370:	e885001f 	stmia	r5, {r0, r1, r2, r3, r4}
+     374:	e1a0000d 	mov	r0, sp
+	bl 	do_fiq
+     378:	eb0005f5 	bl	1b54 <do_fiq>
+     37c:	00000000 	andeq	r0, r0, r0
+
+00000380 <reset_cpu>:
+
+#endif
+
+	.align	5
+.globl reset_cpu
+reset_cpu:
+	mov     pc, r0
+     380:	e1a0f000 	mov	pc, r0
+     384:	00000000 	andeq	r0, r0, r0
+     388:	e1a00000 	nop			(mov r0,r0)
+     38c:	e1a00000 	nop			(mov r0,r0)
+     390:	e1a00000 	nop			(mov r0,r0)
+     394:	e1a00000 	nop			(mov r0,r0)
+     398:	e1a00000 	nop			(mov r0,r0)
+     39c:	e1a00000 	nop			(mov r0,r0)
+
+000003a0 <uintprint>:
+#define DATAFLASH_KERNEL_BASE		 (130*DATAFLASH_MAX_PAGESIZE)
+#define DATAFLASH_FILESYSTEM_BASE	(1664*DATAFLASH_MAX_PAGESIZE)
+
+void uintprint(unsigned int x)
+{
+     3a0:	e1a0c00d 	mov	ip, sp
+     3a4:	e92dd830 	stmdb	sp!, {r4, r5, fp, ip, lr, pc}
+  char stack[10];
+  int size = 0;
+
+  while(x >0)
+     3a8:	e3500000 	cmp	r0, #0	; 0x0
+     3ac:	e24cb004 	sub	fp, ip, #4	; 0x4
+     3b0:	e24dd00c 	sub	sp, sp, #12	; 0xc
+     3b4:	e3a05000 	mov	r5, #0	; 0x0
+     3b8:	0a00000a 	beq	3e8 <uintprint+0x48>
+    stack[size++] = x % 10,  x /= 10;
+     3bc:	e59f3068 	ldr	r3, [pc, #104]	; 42c <uintprint+0x8c>
+     3c0:	e0831390 	umull	r1, r3, r0, r3
+     3c4:	e1a031a3 	mov	r3, r3, lsr #3
+     3c8:	e0832103 	add	r2, r3, r3, lsl #2
+     3cc:	e24b1014 	sub	r1, fp, #20	; 0x14
+     3d0:	e0402082 	sub	r2, r0, r2, lsl #1
+     3d4:	e2530000 	subs	r0, r3, #0	; 0x0
+     3d8:	e0853001 	add	r3, r5, r1
+     3dc:	e543200c 	strb	r2, [r3, -#12]
+     3e0:	e2855001 	add	r5, r5, #1	; 0x1
+     3e4:	1afffff4 	bne	3bc <uintprint+0x1c>
+
+  if (size)
+     3e8:	e3550000 	cmp	r5, #0	; 0x0
+     3ec:	0a00000b 	beq	420 <uintprint+0x80>
+    while (size > 0)
+     3f0:	d91ba830 	ldmledb	fp, {r4, r5, fp, sp, pc}
+     3f4:	e24b2014 	sub	r2, fp, #20	; 0x14
+     3f8:	e0854002 	add	r4, r5, r2
+    {
+      putc('0' + stack[--size]);
+     3fc:	e2444001 	sub	r4, r4, #1	; 0x1
+     400:	e554000c 	ldrb	r0, [r4, -#12]
+     404:	e2800030 	add	r0, r0, #48	; 0x30
+     408:	e20000ff 	and	r0, r0, #255	; 0xff
+     40c:	e2455001 	sub	r5, r5, #1	; 0x1
+     410:	eb0001ad 	bl	acc <putc>
+     414:	e3550000 	cmp	r5, #0	; 0x0
+    }
+  else
+   putc('0');
+}
+     418:	d91ba830 	ldmledb	fp, {r4, r5, fp, sp, pc}
+     41c:	eafffff6 	b	3fc <uintprint+0x5c>
+     420:	e3a00030 	mov	r0, #48	; 0x30
+     424:	eb0001a8 	bl	acc <putc>
+     428:	e91ba830 	ldmdb	fp, {r4, r5, fp, sp, pc}
+     42c:	cccccccd 	stcgtl	12, cr12, [ip], #820
+
+00000430 <hexprint>:
+
+void hexprint(unsigned int hexval)
+{
+     430:	e1a0c00d 	mov	ip, sp
+     434:	e92dd830 	stmdb	sp!, {r4, r5, fp, ip, lr, pc}
+     438:	e24cb004 	sub	fp, ip, #4	; 0x4
+     43c:	e24dd020 	sub	sp, sp, #32	; 0x20
+     440:	e1a04000 	mov	r4, r0
+  int digit[8], pos;
+  puts("0x");
+     444:	e59f0060 	ldr	r0, [pc, #96]	; 4ac <hexprint+0x7c>
+     448:	eb0001b0 	bl	b10 <puts>
+  for(pos = 0; pos < 8; pos++)
+     44c:	e3a05007 	mov	r5, #7	; 0x7
+     450:	e24b2014 	sub	r2, fp, #20	; 0x14
+    {
+      digit[pos] = (hexval & 0xF);  /* last hexit */
+     454:	e204300f 	and	r3, r4, #15	; 0xf
+     458:	e2555001 	subs	r5, r5, #1	; 0x1
+     45c:	e5023020 	str	r3, [r2, -#32]
+      hexval = hexval >> 4;
+     460:	e1a04224 	mov	r4, r4, lsr #4
+     464:	e2822004 	add	r2, r2, #4	; 0x4
+     468:	5afffff9 	bpl	454 <hexprint+0x24>
+    }
+  for(pos = 7; pos > -1; pos--)
+     46c:	e3a05007 	mov	r5, #7	; 0x7
+     470:	e28b4008 	add	r4, fp, #8	; 0x8
+    {
+      if(digit[pos] < 0xA)
+     474:	e5143020 	ldr	r3, [r4, -#32]
+     478:	e3530009 	cmp	r3, #9	; 0x9
+        putc(digit[pos] + '0');
+     47c:	d5540020 	ldrleb	r0, [r4, -#32]
+      else
+        putc(digit[pos] + 'A' - 10);
+     480:	c5540020 	ldrgtb	r0, [r4, -#32]
+     484:	d2800030 	addle	r0, r0, #48	; 0x30
+     488:	c2800037 	addgt	r0, r0, #55	; 0x37
+     48c:	e20000ff 	and	r0, r0, #255	; 0xff
+     490:	eb00018d 	bl	acc <putc>
+     494:	e2555001 	subs	r5, r5, #1	; 0x1
+     498:	e2444004 	sub	r4, r4, #4	; 0x4
+     49c:	5afffff4 	bpl	474 <hexprint+0x44>
+    }
+  putc(' ');
+     4a0:	e3a00020 	mov	r0, #32	; 0x20
+     4a4:	eb000188 	bl	acc <putc>
+     4a8:	e91ba830 	ldmdb	fp, {r4, r5, fp, sp, pc}
+     4ac:	00002158 	andeq	r2, r0, r8, asr r1
+
+000004b0 <hexdump>:
+}
+
+void hexdump(int *addr, int len)
+{
+     4b0:	e1a0c00d 	mov	ip, sp
+  while(len)
+     4b4:	e3510000 	cmp	r1, #0	; 0x0
+     4b8:	e92dd830 	stmdb	sp!, {r4, r5, fp, ip, lr, pc}
+     4bc:	e24cb004 	sub	fp, ip, #4	; 0x4
+     4c0:	e1a05001 	mov	r5, r1
+     4c4:	e1a04000 	mov	r4, r0
+     4c8:	091ba830 	ldmeqdb	fp, {r4, r5, fp, sp, pc}
+    {
+      hexprint((int) addr);
+     4cc:	e1a00004 	mov	r0, r4
+     4d0:	ebffffd6 	bl	430 <hexprint>
+      putc(' ');
+     4d4:	e3a00020 	mov	r0, #32	; 0x20
+     4d8:	eb00017b 	bl	acc <putc>
+      hexprint(*addr);
+     4dc:	e4940004 	ldr	r0, [r4], #4
+     4e0:	ebffffd2 	bl	430 <hexprint>
+      addr ++;
+      putc(' ');
+     4e4:	e3a00020 	mov	r0, #32	; 0x20
+     4e8:	eb000177 	bl	acc <putc>
+      hexprint(*addr);
+     4ec:	e4940004 	ldr	r0, [r4], #4
+     4f0:	ebffffce 	bl	430 <hexprint>
+      addr ++;
+      putc(' ');
+     4f4:	e3a00020 	mov	r0, #32	; 0x20
+     4f8:	eb000173 	bl	acc <putc>
+      hexprint(*addr);
+     4fc:	e4940004 	ldr	r0, [r4], #4
+     500:	ebffffca 	bl	430 <hexprint>
+      addr ++;
+      putc(' ');
+     504:	e3a00020 	mov	r0, #32	; 0x20
+     508:	eb00016f 	bl	acc <putc>
+      hexprint(*addr);
+     50c:	e4940004 	ldr	r0, [r4], #4
+     510:	ebffffc6 	bl	430 <hexprint>
+      addr ++;
+      len -= 16;
+     514:	e2455010 	sub	r5, r5, #16	; 0x10
+      puts("\n");
+     518:	e59f000c 	ldr	r0, [pc, #12]	; 52c <hexdump+0x7c>
+     51c:	eb00017b 	bl	b10 <puts>
+     520:	e3550000 	cmp	r5, #0	; 0x0
+     524:	091ba830 	ldmeqdb	fp, {r4, r5, fp, sp, pc}
+     528:	eaffffe7 	b	4cc <hexdump+0x1c>
+     52c:	000021f4 	streqd	r2, [r0], -r4
+
+00000530 <outl>:
+    }
+}
+
+void outl(int addr, int data)
+{
+  *(int *)addr = data;
+     530:	e5801000 	str	r1, [r0]
+     534:	e1a0f00e 	mov	pc, lr
+
+00000538 <inl>:
+}
+
+int inl(int addr)
+{
+  return *(int *)addr;
+     538:	e5900000 	ldr	r0, [r0]
+}
+     53c:	e1a0f00e 	mov	pc, lr
+
+00000540 <memory_test>:
+
+#define EBI_CSA 0xFFFFFF60
+#define SDRAMC_MR 0xFFFFFF90
+#define SDRAMC_TR 0xFFFFFF94
+#define SDRAMC_CR 0xFFFFFF98
+
+const int ONE_MBYTES = 1024 * 1024;
+
+/* TODO:
+ * This test has to be improved using different patterns, just as memtest86 does.
+ * This one will help us anyway.
+ * */
+
+int memory_test(int base, int len)
+{
+  int *ptr;
+  int i;
+
+#ifdef DEBUG
+  puts ("Writing... ");
+#endif
+
+  ptr = (int *) base;
+  for (i = 0; i < len / sizeof(int); i++)
+     540:	e1a01121 	mov	r1, r1, lsr #2
+     544:	e3a0c000 	mov	ip, #0	; 0x0
+     548:	e15c0001 	cmp	ip, r1
+     54c:	e1a02000 	mov	r2, r0
+     550:	2a00000e 	bcs	590 <memory_test+0x50>
+      *(ptr++) = i;
+     554:	e482c004 	str	ip, [r2], #4
+     558:	e28cc001 	add	ip, ip, #1	; 0x1
+     55c:	e15c0001 	cmp	ip, r1
+     560:	3afffffb 	bcc	554 <memory_test+0x14>
+
+#ifdef DEBUG
+  puts ("Reading... ");
+#endif
+
+  ptr = (int *) base;
+  for (i = 0; i < len / sizeof(int); i++)
+     564:	e3a0c000 	mov	ip, #0	; 0x0
+     568:	e15c0001 	cmp	ip, r1
+     56c:	e1a02000 	mov	r2, r0
+     570:	2a000006 	bcs	590 <memory_test+0x50>
+    if (*(ptr++) != i)
+     574:	e4923004 	ldr	r3, [r2], #4
+     578:	e153000c 	cmp	r3, ip
+     57c:	13a00001 	movne	r0, #1	; 0x1
+     580:	e28cc001 	add	ip, ip, #1	; 0x1
+      return 1; /* Error */
+
+  return 0;
+}
+     584:	11a0f00e 	movne	pc, lr
+     588:	e15c0001 	cmp	ip, r1
+     58c:	3afffff8 	bcc	574 <memory_test+0x34>
+     590:	e3a00000 	mov	r0, #0	; 0x0
+     594:	e1a0f00e 	mov	pc, lr
+
+00000598 <try_configure_sdram>:
+
+/*
+SDRAMC_CR = 2188A15X      where X = NR  NC  (NR, NC 2bits)
+NC    ColumnBits
+0         8
+1         9
+2         10
+3         11
+
+
+NR    RowBits
+0         11
+1         12
+2         13
+3         Reserved
+*/
+
+int try_configure_sdram (int mb)
+{
+     598:	e1a0c00d 	mov	ip, sp
+     59c:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+  int i;
+
+#ifdef DEBUG
+  uintprint(mb), puts ("MB?\n");
+#endif
+
+  outl(EBI_CSA, 0x2);
+     5a0:	e3e0009f 	mvn	r0, #159	; 0x9f
+     5a4:	e24cb004 	sub	fp, ip, #4	; 0x4
+     5a8:	e3a01002 	mov	r1, #2	; 0x2
+     5ac:	ebffffdf 	bl	530 <outl>
+
+//      outl(SDRAMC_CR, 0x2188A154);    // SDRAM 8M    Row=A0-A11, COL=A0-A7
+//      outl(SDRAMC_CR, 0x2188A155);    // SDRAM 16M   Row=A0-A11, COL=A0-A8
+      outl(SDRAMC_CR, 0x2188A159);    // SDRAM 32M   Row=A0-A12, COL=A0-A8
+//      outl(SDRAMC_CR, 0x2188A15A);    // SDRAM 64M   Row=A0-A12, COL=A0-A9
+
+  outl(SDRAMC_MR, 0x12);
+     5b0:	e3e0406f 	mvn	r4, #111	; 0x6f
+     5b4:	e3e00067 	mvn	r0, #103	; 0x67
+     5b8:	e59f1130 	ldr	r1, [pc, #304]	; 6f0 <try_configure_sdram+0x158>
+     5bc:	ebffffdb 	bl	530 <outl>
+     5c0:	e1a00004 	mov	r0, r4
+     5c4:	e3a01012 	mov	r1, #18	; 0x12
+     5c8:	ebffffd8 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     5cc:	e3a01000 	mov	r1, #0	; 0x0
+     5d0:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     5d4:	ebffffd5 	bl	530 <outl>
+  outl(SDRAMC_MR, 0x14);
+     5d8:	e1a00004 	mov	r0, r4
+     5dc:	e3a01014 	mov	r1, #20	; 0x14
+     5e0:	ebffffd2 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     5e4:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     5e8:	e3a01000 	mov	r1, #0	; 0x0
+     5ec:	ebffffcf 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     5f0:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     5f4:	e3a01000 	mov	r1, #0	; 0x0
+     5f8:	ebffffcc 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     5fc:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     600:	e3a01000 	mov	r1, #0	; 0x0
+     604:	ebffffc9 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     608:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     60c:	e3a01000 	mov	r1, #0	; 0x0
+     610:	ebffffc6 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     614:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     618:	e3a01000 	mov	r1, #0	; 0x0
+     61c:	ebffffc3 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     620:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     624:	e3a01000 	mov	r1, #0	; 0x0
+     628:	ebffffc0 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     62c:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     630:	e3a01000 	mov	r1, #0	; 0x0
+     634:	ebffffbd 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     638:	e3a01000 	mov	r1, #0	; 0x0
+     63c:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     640:	ebffffba 	bl	530 <outl>
+  outl(SDRAMC_MR, 0x13);
+     644:	e1a00004 	mov	r0, r4
+     648:	e3a01013 	mov	r1, #19	; 0x13
+     64c:	ebffffb7 	bl	530 <outl>
+  for(i = 0; i < 100; i++);
+     650:	e3a02063 	mov	r2, #99	; 0x63
+     654:	e2522001 	subs	r2, r2, #1	; 0x1
+     658:	5afffffd 	bpl	654 <try_configure_sdram+0xbc>
+  outl(0x20000080, 0);
+     65c:	e59f0090 	ldr	r0, [pc, #144]	; 6f4 <try_configure_sdram+0x15c>
+     660:	e3a01000 	mov	r1, #0	; 0x0
+     664:	ebffffb1 	bl	530 <outl>
+  outl(SDRAMC_TR, 0x1C0);
+     668:	e3e0006b 	mvn	r0, #107	; 0x6b
+     66c:	e3a01d07 	mov	r1, #448	; 0x1c0
+     670:	ebffffae 	bl	530 <outl>
+  outl(AT91_SDRAM_BASE, 0);
+     674:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     678:	e3a01000 	mov	r1, #0	; 0x0
+     67c:	ebffffab 	bl	530 <outl>
+  outl(SDRAMC_MR, 0x10);
+     680:	e3e0006f 	mvn	r0, #111	; 0x6f
+     684:	e3a01010 	mov	r1, #16	; 0x10
+     688:	ebffffa8 	bl	530 <outl>
+
+  for (i = 32; i >= 1; --i)
+     68c:	e3a02020 	mov	r2, #32	; 0x20
+    *((char*) (AT91_SDRAM_BASE + i * ONE_MBYTES - 1)) = i;
+     690:	e3e0320e 	mvn	r3, #-536870912	; 0xe0000000
+     694:	e7c32a02 	strb	r2, [r3, r2, lsl #20]
+     698:	e2422001 	sub	r2, r2, #1	; 0x1
+     69c:	e3520000 	cmp	r2, #0	; 0x0
+     6a0:	cafffffa 	bgt	690 <try_configure_sdram+0xf8>
+
+  for (i = 32; i >= 1; --i)
+     6a4:	e3a02020 	mov	r2, #32	; 0x20
+   if (*((char*) (AT91_SDRAM_BASE + i * ONE_MBYTES - 1)) != i)
+     6a8:	e3e0320e 	mvn	r3, #-536870912	; 0xe0000000
+     6ac:	e7d33a02 	ldrb	r3, [r3, r2, lsl #20]
+     6b0:	e1530002 	cmp	r3, r2
+     6b4:	13a00001 	movne	r0, #1	; 0x1
+     6b8:	e2422001 	sub	r2, r2, #1	; 0x1
+     return 1;
+
+  if (memory_test(AT91_SDRAM_BASE, 0xfff))
+  {
+    puts("\nPreliminary RAM test failed");
+  }
+
+  return 0;
+}
+     6bc:	191ba810 	ldmnedb	fp, {r4, fp, sp, pc}
+     6c0:	e3520000 	cmp	r2, #0	; 0x0
+     6c4:	cafffff7 	bgt	6a8 <try_configure_sdram+0x110>
+     6c8:	e59f1028 	ldr	r1, [pc, #40]	; 6f8 <try_configure_sdram+0x160>
+     6cc:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     6d0:	ebffff9a 	bl	540 <memory_test>
+     6d4:	e3500000 	cmp	r0, #0	; 0x0
+     6d8:	1a000001 	bne	6e4 <try_configure_sdram+0x14c>
+     6dc:	e3a00000 	mov	r0, #0	; 0x0
+     6e0:	e91ba810 	ldmdb	fp, {r4, fp, sp, pc}
+     6e4:	e59f0010 	ldr	r0, [pc, #16]	; 6fc <try_configure_sdram+0x164>
+     6e8:	eb000108 	bl	b10 <puts>
+     6ec:	eafffffa 	b	6dc <try_configure_sdram+0x144>
+     6f0:	2188a159 	orrcs	sl, r8, r9, asr r1
+     6f4:	20000080 	andcs	r0, r0, r0, lsl #1
+     6f8:	00000fff 	streqd	r0, [r0], -pc
+     6fc:	0000215c 	andeq	r2, r0, ip, asr r1
+
+00000700 <start_armboot>:
+
+
+void start_armboot (void)
+{
+  int len, i;
+  int ram_size;
+
+
+  /* PMC Clock Initialization */
+  AT91PS_PMC pmc = (AT91PS_PMC)AT91C_BASE_PMC;
+     700:	e59f2288 	ldr	r2, [pc, #648]	; 990 <start_armboot+0x290>
+  pmc->CKGR_PLLAR = 0x20269004;
+     704:	e59f3288 	ldr	r3, [pc, #648]	; 994 <start_armboot+0x294>
+     708:	e1a0c00d 	mov	ip, sp
+     70c:	e92dd870 	stmdb	sp!, {r4, r5, r6, fp, ip, lr, pc}
+     710:	e5823028 	str	r3, [r2, #40]
+     714:	e24cb004 	sub	fp, ip, #4	; 0x4
+  while(!(pmc->PMC_SR & 0x2));
+     718:	e5923068 	ldr	r3, [r2, #104]
+     71c:	e3130002 	tst	r3, #2	; 0x2
+     720:	0afffffc 	beq	718 <start_armboot+0x18>
+  pmc->CKGR_PLLBR = 0x10193E05;
+     724:	e59f326c 	ldr	r3, [pc, #620]	; 998 <start_armboot+0x298>
+     728:	e582302c 	str	r3, [r2, #44]
+  while(!(pmc->PMC_SR & 0x4));
+     72c:	e5923068 	ldr	r3, [r2, #104]
+     730:	e3130004 	tst	r3, #4	; 0x4
+     734:	0afffffc 	beq	72c <start_armboot+0x2c>
+  pmc->PMC_MCKR = 0x202;    /*Select PLLA as MCK*/
+     738:	e59f325c 	ldr	r3, [pc, #604]	; 99c <start_armboot+0x29c>
+     73c:	e5823030 	str	r3, [r2, #48]
+
+  serial_init();
+     740:	eb0000c5 	bl	a5c <serial_init>
+  for(i=0; i < 10000; i++); /* Some of the parts want some time after powerup */
+     744:	e59f5254 	ldr	r5, [pc, #596]	; 9a0 <start_armboot+0x2a0>
+     748:	e2555001 	subs	r5, r5, #1	; 0x1
+     74c:	1afffffd 	bne	748 <start_armboot+0x48>
+
+  puts("\n.\n.\n.\nDarrell's loader - Thanks to the u-boot project\nVersion 1.0\n");
+     750:	e59f024c 	ldr	r0, [pc, #588]	; 9a4 <start_armboot+0x2a4>
+
+
+  ram_size = 32;
+     754:	e3a04020 	mov	r4, #32	; 0x20
+     758:	eb0000ec 	bl	b10 <puts>
+  try_configure_sdram(32);
+     75c:	e1a00004 	mov	r0, r4
+     760:	ebffff8c 	bl	598 <try_configure_sdram>
+
+  puts("RAM:"), uintprint(ram_size), puts("MB\n");
+     764:	e59f023c 	ldr	r0, [pc, #572]	; 9a8 <start_armboot+0x2a8>
+     768:	eb0000e8 	bl	b10 <puts>
+     76c:	e1a00004 	mov	r0, r4
+     770:	ebffff0a 	bl	3a0 <uintprint>
+
+  int key = 0, autoboot = 1, scans = 0, dispmenu = 1;
+     774:	e3a06001 	mov	r6, #1	; 0x1
+     778:	e59f022c 	ldr	r0, [pc, #556]	; 9ac <start_armboot+0x2ac>
+     77c:	eb0000e3 	bl	b10 <puts>
+     780:	e1a00006 	mov	r0, r6
+
+  while(1) /* loop forever until u-boot gets booted or the board is reset */
+{
+    if(dispmenu){
+     784:	e3500000 	cmp	r0, #0	; 0x0
+     788:	0a00000b 	beq	7bc <start_armboot+0xbc>
+      puts("\n1: Upload Darrell's loader to Dataflash\n");
+     78c:	e59f021c 	ldr	r0, [pc, #540]	; 9b0 <start_armboot+0x2b0>
+     790:	eb0000de 	bl	b10 <puts>
+      puts("2: Upload u-boot to Dataflash\n");
+     794:	e59f0218 	ldr	r0, [pc, #536]	; 9b4 <start_armboot+0x2b4>
+     798:	eb0000dc 	bl	b10 <puts>
+      puts("3: Upload Kernel to Dataflash\n");
+     79c:	e59f0214 	ldr	r0, [pc, #532]	; 9b8 <start_armboot+0x2b8>
+     7a0:	eb0000da 	bl	b10 <puts>
+      puts("4: Start u-boot\n");
+     7a4:	e59f0210 	ldr	r0, [pc, #528]	; 9bc <start_armboot+0x2bc>
+     7a8:	eb0000d8 	bl	b10 <puts>
+      puts("5: Upload Filesystem image\n");
+     7ac:	e59f020c 	ldr	r0, [pc, #524]	; 9c0 <start_armboot+0x2c0>
+     7b0:	eb0000d6 	bl	b10 <puts>
+      puts("6: Memory test\n");
+     7b4:	e59f0208 	ldr	r0, [pc, #520]	; 9c4 <start_armboot+0x2c4>
+     7b8:	eb0000d4 	bl	b10 <puts>
+      dispmenu = 0;
+    }
+    if(tstc()){
+     7bc:	eb0000ee 	bl	b7c <tstc>
+     7c0:	e3500000 	cmp	r0, #0	; 0x0
+     7c4:	0a000001 	beq	7d0 <start_armboot+0xd0>
+      key = getc();
+     7c8:	eb0000e3 	bl	b5c <getc>
+      autoboot = 0;
+     7cc:	e3a06000 	mov	r6, #0	; 0x0
+    }
+    else
+      key = 0;
+    if(key == '1'){
+     7d0:	e3500031 	cmp	r0, #49	; 0x31
+     7d4:	0a00005a 	beq	944 <start_armboot+0x244>
+      len = rxmodem((char *)0x20000000);
+      puts("Received ");
+      hexprint(len);
+      puts(" bytes\n");
+      outl(0x20000014, ((528 << 17) + (12 << 13) + 24));
+      puts("Modified ARM vector 6\n");
+      AT91F_DataflashInit ();
+      dataflash_print_info ();
+      if(write_dataflash(DATAFLASH_LOADER_BASE, 0x20000000, len))
+        puts("Dataflash write successful\n");
+      dispmenu = 1;
+    }
+    else if(key == '2'){
+     7d8:	e3500032 	cmp	r0, #50	; 0x32
+     7dc:	0a00004e 	beq	91c <start_armboot+0x21c>
+      puts("Please transfer u-boot.bin via Xmodem\n\0");
+      len = rxmodem((char *)0x20000000);
+      AT91F_DataflashInit ();
+      dataflash_print_info ();
+      if(write_dataflash(DATAFLASH_UBOOT_BASE, 0x20000000, len))
+        puts("Dataflash write successful\n");
+      dispmenu = 1;
+    }
+    else if(key == '3'){
+     7e0:	e3500033 	cmp	r0, #51	; 0x33
+     7e4:	0a000041 	beq	8f0 <start_armboot+0x1f0>
+      puts("Please transfer Kernel via Xmodem\n\0");
+      len = rxmodem((char *)0x20000000);
+      puts("\nPlease wait...\n");
+      AT91F_DataflashInit ();
+      dataflash_print_info ();
+      if(write_dataflash(DATAFLASH_KERNEL_BASE, 0x20000000, len))
+        puts("Dataflash write successful\n");
+      dispmenu = 1;
+    }
+    else if(key == '4' || ((scans > 300000) && autoboot)){
+     7e8:	e3500034 	cmp	r0, #52	; 0x34
+     7ec:	0a000005 	beq	808 <start_armboot+0x108>
+     7f0:	e59f31d0 	ldr	r3, [pc, #464]	; 9c8 <start_armboot+0x2c8>
+     7f4:	e1550003 	cmp	r5, r3
+     7f8:	d3a03000 	movle	r3, #0	; 0x0
+     7fc:	c2063001 	andgt	r3, r6, #1	; 0x1
+     800:	e3530000 	cmp	r3, #0	; 0x0
+     804:	0a000012 	beq	854 <start_armboot+0x154>
+      if(AT91F_DataflashInit ()){
+     808:	eb0003a5 	bl	16a4 <AT91F_DataflashInit>
+     80c:	e3500000 	cmp	r0, #0	; 0x0
+     810:	0a000009 	beq	83c <start_armboot+0x13c>
+        dataflash_print_info ();
+     814:	eb0003da 	bl	1784 <dataflash_print_info>
+        if(read_dataflash(DATAFLASH_UBOOT_BASE, 0x1C000, (char *)0x20700000)){
+     818:	e59f21ac 	ldr	r2, [pc, #428]	; 9cc <start_armboot+0x2cc>
+     81c:	e3a00dc6 	mov	r0, #12672	; 0x3180
+     820:	e3a01907 	mov	r1, #114688	; 0x1c000
+     824:	eb000418 	bl	188c <read_dataflash>
+     828:	e3500000 	cmp	r0, #0	; 0x0
+     82c:	0a000002 	beq	83c <start_armboot+0x13c>
+          puts("Dataflash read successful: Starting U-boot\n");
+     830:	e59f0198 	ldr	r0, [pc, #408]	; 9d0 <start_armboot+0x2d0>
+     834:	eb0000b5 	bl	b10 <puts>
+          asm("ldr pc, =0x20700000");
+     838:	e59ff1e0 	ldr	pc, [pc, #480]	; a20 <start_armboot+0x320>
+        }
+      }
+
+      puts("Dataflash not found\n");
+     83c:	e59f0190 	ldr	r0, [pc, #400]	; 9d4 <start_armboot+0x2d4>
+     840:	eb0000b2 	bl	b10 <puts>
+      scans = 0;
+     844:	e3a05000 	mov	r5, #0	; 0x0
+      dispmenu = 1;
+    }
+
+    else if(key == '5'){
+      puts("Please transfer Filesystem Xmodem\n\0");
+      len = rxmodem((char *)0x20000000);
+      AT91F_DataflashInit ();
+      dataflash_print_info ();
+      puts("Writing Dataflash... please wait...\n");
+      if(write_dataflash(DATAFLASH_FILESYSTEM_BASE, 0x20000000, len))
+        puts("Dataflash write successful\n");
+      dispmenu = 1;
+    }
+    else if(key == '6'){
+      puts ("\nTesting RAM, Detected "), uintprint(ram_size), puts("MB ==> ");
+
+      if (!memory_test(AT91_SDRAM_BASE, ram_size * ONE_MBYTES))
+        puts ("OK\n");
+      else
+        puts ("FAILED\n");
+
+      dispmenu = 1;
+    }
+    else if(key == 0)
+      dispmenu = 0;
+    else{
+      puts("Invalid input\n");
+      dispmenu = 1;
+     848:	e3a00001 	mov	r0, #1	; 0x1
+    }
+    scans++;
+     84c:	e2855001 	add	r5, r5, #1	; 0x1
+     850:	eaffffcb 	b	784 <start_armboot+0x84>
+     854:	e3500035 	cmp	r0, #53	; 0x35
+     858:	0a000013 	beq	8ac <start_armboot+0x1ac>
+     85c:	e3500036 	cmp	r0, #54	; 0x36
+     860:	0a000004 	beq	878 <start_armboot+0x178>
+     864:	e3500000 	cmp	r0, #0	; 0x0
+     868:	0afffff7 	beq	84c <start_armboot+0x14c>
+     86c:	e59f0164 	ldr	r0, [pc, #356]	; 9d8 <start_armboot+0x2d8>
+     870:	eb0000a6 	bl	b10 <puts>
+     874:	eafffff3 	b	848 <start_armboot+0x148>
+     878:	e59f015c 	ldr	r0, [pc, #348]	; 9dc <start_armboot+0x2dc>
+     87c:	eb0000a3 	bl	b10 <puts>
+     880:	e3a00020 	mov	r0, #32	; 0x20
+     884:	ebfffec5 	bl	3a0 <uintprint>
+     888:	e59f0150 	ldr	r0, [pc, #336]	; 9e0 <start_armboot+0x2e0>
+     88c:	eb00009f 	bl	b10 <puts>
+     890:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     894:	e3a01402 	mov	r1, #33554432	; 0x2000000
+     898:	ebffff28 	bl	540 <memory_test>
+     89c:	e3500000 	cmp	r0, #0	; 0x0
+     8a0:	059f013c 	ldreq	r0, [pc, #316]	; 9e4 <start_armboot+0x2e4>
+     8a4:	159f013c 	ldrne	r0, [pc, #316]	; 9e8 <start_armboot+0x2e8>
+     8a8:	eafffff0 	b	870 <start_armboot+0x170>
+     8ac:	e59f0138 	ldr	r0, [pc, #312]	; 9ec <start_armboot+0x2ec>
+     8b0:	eb000096 	bl	b10 <puts>
+     8b4:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     8b8:	eb0000b5 	bl	b94 <rxmodem>
+     8bc:	e1a04000 	mov	r4, r0
+     8c0:	eb000377 	bl	16a4 <AT91F_DataflashInit>
+     8c4:	eb0003ae 	bl	1784 <dataflash_print_info>
+     8c8:	e59f0120 	ldr	r0, [pc, #288]	; 9f0 <start_armboot+0x2f0>
+     8cc:	eb00008f 	bl	b10 <puts>
+     8d0:	e59f011c 	ldr	r0, [pc, #284]	; 9f4 <start_armboot+0x2f4>
+     8d4:	e1a02004 	mov	r2, r4
+     8d8:	e3a01202 	mov	r1, #536870912	; 0x20000000
+     8dc:	eb00040c 	bl	1914 <write_dataflash>
+     8e0:	e3500000 	cmp	r0, #0	; 0x0
+     8e4:	159f010c 	ldrne	r0, [pc, #268]	; 9f8 <start_armboot+0x2f8>
+     8e8:	1affffe0 	bne	870 <start_armboot+0x170>
+     8ec:	eaffffd5 	b	848 <start_armboot+0x148>
+     8f0:	e59f0104 	ldr	r0, [pc, #260]	; 9fc <start_armboot+0x2fc>
+     8f4:	eb000085 	bl	b10 <puts>
+     8f8:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     8fc:	eb0000a4 	bl	b94 <rxmodem>
+     900:	e1a04000 	mov	r4, r0
+     904:	e59f00f4 	ldr	r0, [pc, #244]	; a00 <start_armboot+0x300>
+     908:	eb000080 	bl	b10 <puts>
+     90c:	eb000364 	bl	16a4 <AT91F_DataflashInit>
+     910:	eb00039b 	bl	1784 <dataflash_print_info>
+     914:	e59f00e8 	ldr	r0, [pc, #232]	; a04 <start_armboot+0x304>
+     918:	eaffffed 	b	8d4 <start_armboot+0x1d4>
+     91c:	e59f00e4 	ldr	r0, [pc, #228]	; a08 <start_armboot+0x308>
+     920:	eb00007a 	bl	b10 <puts>
+     924:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     928:	eb000099 	bl	b94 <rxmodem>
+     92c:	e1a04000 	mov	r4, r0
+     930:	eb00035b 	bl	16a4 <AT91F_DataflashInit>
+     934:	eb000392 	bl	1784 <dataflash_print_info>
+     938:	e1a02004 	mov	r2, r4
+     93c:	e3a00dc6 	mov	r0, #12672	; 0x3180
+     940:	eaffffe4 	b	8d8 <start_armboot+0x1d8>
+     944:	e3a00202 	mov	r0, #536870912	; 0x20000000
+     948:	eb000091 	bl	b94 <rxmodem>
+     94c:	e1a04000 	mov	r4, r0
+     950:	e59f00b4 	ldr	r0, [pc, #180]	; a0c <start_armboot+0x30c>
+     954:	eb00006d 	bl	b10 <puts>
+     958:	e1a00004 	mov	r0, r4
+     95c:	ebfffeb3 	bl	430 <hexprint>
+     960:	e59f00a8 	ldr	r0, [pc, #168]	; a10 <start_armboot+0x310>
+     964:	eb000069 	bl	b10 <puts>
+     968:	e59f10a4 	ldr	r1, [pc, #164]	; a14 <start_armboot+0x314>
+     96c:	e59f00a4 	ldr	r0, [pc, #164]	; a18 <start_armboot+0x318>
+     970:	ebfffeee 	bl	530 <outl>
+     974:	e59f00a0 	ldr	r0, [pc, #160]	; a1c <start_armboot+0x31c>
+     978:	eb000064 	bl	b10 <puts>
+     97c:	eb000348 	bl	16a4 <AT91F_DataflashInit>
+     980:	eb00037f 	bl	1784 <dataflash_print_info>
+     984:	e1a02004 	mov	r2, r4
+     988:	e3a00000 	mov	r0, #0	; 0x0
+     98c:	eaffffd1 	b	8d8 <start_armboot+0x1d8>
+     990:	fffffc00 	swinv	0x00fffc00
+     994:	20269004 	eorcs	r9, r6, r4
+     998:	10193e05 	andnes	r3, r9, r5, lsl #28
+     99c:	00000202 	andeq	r0, r0, r2, lsl #4
+     9a0:	00002710 	andeq	r2, r0, r0, lsl r7
+     9a4:	0000217c 	andeq	r2, r0, ip, ror r1
+     9a8:	000021c0 	andeq	r2, r0, r0, asr #3
+     9ac:	000021c8 	andeq	r2, r0, r8, asr #3
+     9b0:	000021cc 	andeq	r2, r0, ip, asr #3
+     9b4:	000021f8 	streqd	r2, [r0], -r8
+     9b8:	00002218 	andeq	r2, r0, r8, lsl r2
+     9bc:	00002238 	andeq	r2, r0, r8, lsr r2
+     9c0:	0000224c 	andeq	r2, r0, ip, asr #4
+     9c4:	00002268 	andeq	r2, r0, r8, ror #4
+     9c8:	000493e0 	andeq	r9, r4, r0, ror #7
+     9cc:	20700000 	rsbcss	r0, r0, r0
+     9d0:	00002278 	andeq	r2, r0, r8, ror r2
+     9d4:	000022a4 	andeq	r2, r0, r4, lsr #5
+     9d8:	000022bc 	streqh	r2, [r0], -ip
+     9dc:	000022cc 	andeq	r2, r0, ip, asr #5
+     9e0:	000022e4 	andeq	r2, r0, r4, ror #5
+     9e4:	000022ec 	andeq	r2, r0, ip, ror #5
+     9e8:	000022f0 	streqd	r2, [r0], -r0
+     9ec:	00001ee8 	andeq	r1, r0, r8, ror #29
+     9f0:	000022f8 	streqd	r2, [r0], -r8
+     9f4:	001ad000 	andeqs	sp, sl, r0
+     9f8:	00002320 	andeq	r2, r0, r0, lsr #6
+     9fc:	00001f0c 	andeq	r1, r0, ip, lsl #30
+     a00:	0000233c 	andeq	r2, r0, ip, lsr r3
+     a04:	00021840 	andeq	r1, r2, r0, asr #16
+     a08:	00001f30 	andeq	r1, r0, r0, lsr pc
+     a0c:	00002350 	andeq	r2, r0, r0, asr r3
+     a10:	0000235c 	andeq	r2, r0, ip, asr r3
+     a14:	04218018 	streqt	r8, [r1], -#24
+     a18:	20000014 	andcs	r0, r0, r4, lsl r0
+     a1c:	00002364 	andeq	r2, r0, r4, ror #6
+     a20:	20700000 	rsbcss	r0, r0, r0
+
+00000a24 <hang>:
+  }
+  /* NOTREACHED - no way out of command loop except booting */
+}
+
+void
+hang (void)
+{
+     a24:	e1a0c00d 	mov	ip, sp
+     a28:	e92dd800 	stmdb	sp!, {fp, ip, lr, pc}
+  puts ("### ERROR ### Please RESET the board ###\n");
+     a2c:	e59f0008 	ldr	r0, [pc, #8]	; a3c <hang+0x18>
+     a30:	e24cb004 	sub	fp, ip, #4	; 0x4
+     a34:	eb000035 	bl	b10 <puts>
+  for (;;);
+     a38:	eafffffe 	b	a38 <hang+0x14>
+     a3c:	0000237c 	andeq	r2, r0, ip, ror r3
+
+00000a40 <serial_setbrg>:
+  int baudrate;
+
+  if ((baudrate = gd->bd->bi_baudrate) <= 0)
+    baudrate = CONFIG_BAUDRATE;
+  us->US_BRGR = 33;	/* hardcode so no __divsi3 */
+     a40:	e59f3010 	ldr	r3, [pc, #16]	; a58 <serial_setbrg+0x18>
+     a44:	e5932000 	ldr	r2, [r3]
+     a48:	e5983000 	ldr	r3, [r8]
+     a4c:	e3a03021 	mov	r3, #33	; 0x21
+     a50:	e5823020 	str	r3, [r2, #32]
+     a54:	e1a0f00e 	mov	pc, lr
+     a58:	00002554 	andeq	r2, r0, r4, asr r5
+
+00000a5c <serial_init>:
+}
+
+int
+serial_init (void)
+{
+  /* make any port initializations specific to this port */
+  *AT91C_PIOA_PDR = AT91C_PA31_DTXD | AT91C_PA30_DRXD;	/* PA 31 & 30 */
+     a5c:	e59f305c 	ldr	r3, [pc, #92]	; ac0 <serial_init+0x64>
+     a60:	e1a0c00d 	mov	ip, sp
+     a64:	e3a02103 	mov	r2, #-1073741824	; 0xc0000000
+     a68:	e92dd800 	stmdb	sp!, {fp, ip, lr, pc}
+     a6c:	e5832000 	str	r2, [r3]
+  *AT91C_PMC_PCER = 1 << AT91C_ID_SYS;	/* enable clock */
+     a70:	e59f304c 	ldr	r3, [pc, #76]	; ac4 <serial_init+0x68>
+     a74:	e2822109 	add	r2, r2, #1073741826	; 0x40000002
+     a78:	e5832000 	str	r2, [r3]
+     a7c:	e24cb004 	sub	fp, ip, #4	; 0x4
+  serial_setbrg ();
+     a80:	ebffffee 	bl	a40 <serial_setbrg>
+
+  us->US_CR = AT91C_US_RSTRX | AT91C_US_RSTTX;
+     a84:	e59f203c 	ldr	r2, [pc, #60]	; ac8 <serial_init+0x6c>
+     a88:	e5921000 	ldr	r1, [r2]
+     a8c:	e3a0300c 	mov	r3, #12	; 0xc
+     a90:	e5813000 	str	r3, [r1]
+  us->US_CR = AT91C_US_RXEN | AT91C_US_TXEN;
+     a94:	e5921000 	ldr	r1, [r2]
+     a98:	e2833044 	add	r3, r3, #68	; 0x44
+     a9c:	e5813000 	str	r3, [r1]
+  us->US_MR =
+     aa0:	e5921000 	ldr	r1, [r2]
+     aa4:	e2833e87 	add	r3, r3, #2160	; 0x870
+     aa8:	e5813004 	str	r3, [r1, #4]
+    (AT91C_US_CLKS_CLOCK | AT91C_US_CHRL_8_BITS |
+     AT91C_US_PAR_NONE | AT91C_US_NBSTOP_1_BIT);
+  us->US_IMR = ~0ul;
+     aac:	e5922000 	ldr	r2, [r2]
+     ab0:	e3e03000 	mvn	r3, #0	; 0x0
+     ab4:	e5823010 	str	r3, [r2, #16]
+  return (0);
+}
+     ab8:	e3a00000 	mov	r0, #0	; 0x0
+     abc:	e91ba800 	ldmdb	fp, {fp, sp, pc}
+     ac0:	fffff404 	swinv	0x00fff404
+     ac4:	fffffc10 	swinv	0x00fffc10
+     ac8:	00002554 	andeq	r2, r0, r4, asr r5
+
+00000acc <putc>:
+
+void
+putc (const char c)
+{
+     acc:	e1a0c00d 	mov	ip, sp
+     ad0:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+     ad4:	e20040ff 	and	r4, r0, #255	; 0xff
+  if (c == '\n')
+     ad8:	e354000a 	cmp	r4, #10	; 0xa
+     adc:	e24cb004 	sub	fp, ip, #4	; 0x4
+     ae0:	0a000006 	beq	b00 <putc+0x34>
+    putc ('\r');
+  while ((us->US_CSR & AT91C_US_TXRDY) == 0);
+     ae4:	e59f3020 	ldr	r3, [pc, #32]	; b0c <putc+0x40>
+     ae8:	e5932000 	ldr	r2, [r3]
+     aec:	e5923014 	ldr	r3, [r2, #20]
+     af0:	e3130002 	tst	r3, #2	; 0x2
+     af4:	1582401c 	strne	r4, [r2, #28]
+     af8:	191ba810 	ldmnedb	fp, {r4, fp, sp, pc}
+     afc:	eafffff8 	b	ae4 <putc+0x18>
+     b00:	e3a0000d 	mov	r0, #13	; 0xd
+     b04:	ebfffff0 	bl	acc <putc>
+     b08:	eafffff5 	b	ae4 <putc+0x18>
+     b0c:	00002554 	andeq	r2, r0, r4, asr r5
+
+00000b10 <puts>:
+  us->US_THR = c;
+}
+
+void
+puts (const char *s)
+{
+     b10:	e1a0c00d 	mov	ip, sp
+     b14:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+  while (*s)
+     b18:	e5d03000 	ldrb	r3, [r0]
+     b1c:	e3530000 	cmp	r3, #0	; 0x0
+     b20:	e24cb004 	sub	fp, ip, #4	; 0x4
+     b24:	e1a04000 	mov	r4, r0
+     b28:	091ba810 	ldmeqdb	fp, {r4, fp, sp, pc}
+    {
+      if (*s == '\n')
+     b2c:	e20330ff 	and	r3, r3, #255	; 0xff
+     b30:	e353000a 	cmp	r3, #10	; 0xa
+     b34:	e3a0000d 	mov	r0, #13	; 0xd
+     b38:	0a000005 	beq	b54 <puts+0x44>
+	putc ('\r');
+      putc(*s);
+     b3c:	e5d40000 	ldrb	r0, [r4]
+     b40:	ebffffe1 	bl	acc <putc>
+      s++;
+     b44:	e5f43001 	ldrb	r3, [r4, #1]!
+     b48:	e3530000 	cmp	r3, #0	; 0x0
+     b4c:	091ba810 	ldmeqdb	fp, {r4, fp, sp, pc}
+     b50:	eafffff5 	b	b2c <puts+0x1c>
+     b54:	ebffffdc 	bl	acc <putc>
+     b58:	eafffff7 	b	b3c <puts+0x2c>
+
+00000b5c <getc>:
+    }
+}
+
+int
+getc (void)
+{
+  while ((us->US_CSR & AT91C_US_RXRDY) == 0);
+     b5c:	e59f3014 	ldr	r3, [pc, #20]	; b78 <getc+0x1c>
+     b60:	e5932000 	ldr	r2, [r3]
+     b64:	e5923014 	ldr	r3, [r2, #20]
+     b68:	e3130001 	tst	r3, #1	; 0x1
+     b6c:	15920018 	ldrne	r0, [r2, #24]
+  return us->US_RHR;
+}
+     b70:	11a0f00e 	movne	pc, lr
+     b74:	eafffff8 	b	b5c <getc>
+     b78:	00002554 	andeq	r2, r0, r4, asr r5
+
+00000b7c <tstc>:
+
+int
+tstc (void)
+{
+  return ((us->US_CSR & AT91C_US_RXRDY) == AT91C_US_RXRDY);
+     b7c:	e59f300c 	ldr	r3, [pc, #12]	; b90 <tstc+0x14>
+     b80:	e5933000 	ldr	r3, [r3]
+     b84:	e5930014 	ldr	r0, [r3, #20]
+     b88:	e2000001 	and	r0, r0, #1	; 0x1
+}
+     b8c:	e1a0f00e 	mov	pc, lr
+     b90:	00002554 	andeq	r2, r0, r4, asr r5
+
+00000b94 <rxmodem>:
+#define ACK	0x06
+#define	NAK	0x15
+
+int rxmodem(unsigned char *dest)
+{
+     b94:	e1a0c00d 	mov	ip, sp
+     b98:	e92dd8f0 	stmdb	sp!, {r4, r5, r6, r7, fp, ip, lr, pc}
+	unsigned long *ptr = (unsigned long *) 0x20000000;
+     b9c:	e3a02202 	mov	r2, #536870912	; 0x20000000
+     ba0:	e24cb004 	sub	fp, ip, #4	; 0x4
+     ba4:	e1a05000 	mov	r5, r0
+	unsigned short crc, tcrc;
+	int i, pid = 1, len = 0;
+     ba8:	e3a06001 	mov	r6, #1	; 0x1
+     bac:	e3a07000 	mov	r7, #0	; 0x0
+
+	for (i = 0; i < 0x100000; i++)
+     bb0:	e3a04601 	mov	r4, #1048576	; 0x100000
+	{
+		*ptr = 0;
+     bb4:	e3a03000 	mov	r3, #0	; 0x0
+     bb8:	e2544001 	subs	r4, r4, #1	; 0x1
+     bbc:	e4823004 	str	r3, [r2], #4
+     bc0:	1afffffb 	bne	bb4 <rxmodem+0x20>
+		ptr++;
+	}
+
+	puts("Receiving Xmodem transfer\n");
+     bc4:	e59f00cc 	ldr	r0, [pc, #204]	; c98 <rxmodem+0x104>
+     bc8:	ebffffd0 	bl	b10 <puts>
+	for (i = 0; i < 20000000; i++);
+     bcc:	e59f40c8 	ldr	r4, [pc, #200]	; c9c <rxmodem+0x108>
+     bd0:	e2544001 	subs	r4, r4, #1	; 0x1
+     bd4:	1afffffd 	bne	bd0 <rxmodem+0x3c>
+	while (tstc ()) /* clear uart buffer */
+     bd8:	ebffffe7 	bl	b7c <tstc>
+     bdc:	e3500000 	cmp	r0, #0	; 0x0
+     be0:	0a000001 	beq	bec <rxmodem+0x58>
+		getc ();
+     be4:	ebffffdc 	bl	b5c <getc>
+     be8:	eafffffa 	b	bd8 <rxmodem+0x44>
+	putc ('C');
+     bec:	e3a00043 	mov	r0, #67	; 0x43
+     bf0:	ebffffb5 	bl	acc <putc>
+
+	while(1)
+	{
+		int c, pid1, pid2;
+
+		c = getc ();
+     bf4:	ebffffd8 	bl	b5c <getc>
+		if (c != SOH)
+     bf8:	e3500001 	cmp	r0, #1	; 0x1
+     bfc:	1a00001f 	bne	c80 <rxmodem+0xec>
+		{
+			if (c == EOT)
+			{
+				putc (ACK);
+				return len;
+			}
+			else
+				return 0;
+		}
+
+		pid1 = getc ();
+     c00:	ebffffd5 	bl	b5c <getc>
+     c04:	e1a04000 	mov	r4, r0
+		pid2 = getc ();
+     c08:	ebffffd3 	bl	b5c <getc>
+
+		if ((pid1 & 0xFF) != (~pid2 & 0xFF))
+     c0c:	e1e00000 	mvn	r0, r0
+     c10:	e20000ff 	and	r0, r0, #255	; 0xff
+     c14:	e20430ff 	and	r3, r4, #255	; 0xff
+     c18:	e1530000 	cmp	r3, r0
+     c1c:	1a000015 	bne	c78 <rxmodem+0xe4>
+			return 0;
+
+		if (pid1 != pid)
+     c20:	e1540006 	cmp	r4, r6
+     c24:	1a000013 	bne	c78 <rxmodem+0xe4>
+			return 0;
+
+		for (i = 0; i < 130; i++)
+     c28:	e3a04081 	mov	r4, #129	; 0x81
+			*dest++ = getc ();
+     c2c:	ebffffca 	bl	b5c <getc>
+     c30:	e2544001 	subs	r4, r4, #1	; 0x1
+     c34:	e4c50001 	strb	r0, [r5], #1
+     c38:	5afffffb 	bpl	c2c <rxmodem+0x98>
+
+		crc = crc16_ccitt (dest - 130, 128);
+     c3c:	e2450082 	sub	r0, r5, #130	; 0x82
+     c40:	e3a01080 	mov	r1, #128	; 0x80
+     c44:	eb000015 	bl	ca0 <crc16_ccitt>
+		tcrc = (*(dest - 2)<<8) + *(dest - 1);
+     c48:	e5552002 	ldrb	r2, [r5, -#2]
+     c4c:	e5553001 	ldrb	r3, [r5, -#1]
+		if (crc != tcrc)
+     c50:	e1a00800 	mov	r0, r0, lsl #16
+     c54:	e0833402 	add	r3, r3, r2, lsl #8
+     c58:	e1500803 	cmp	r0, r3, lsl #16
+     c5c:	e2452002 	sub	r2, r5, #2	; 0x2
+			return 0;
+		else
+		{
+			pid = (pid + 1) & 0xFF;
+     c60:	02863001 	addeq	r3, r6, #1	; 0x1
+			dest -= 2;
+			len += 128;
+			putc (ACK);
+     c64:	03a00006 	moveq	r0, #6	; 0x6
+     c68:	020360ff 	andeq	r6, r3, #255	; 0xff
+     c6c:	01a05002 	moveq	r5, r2
+     c70:	02877080 	addeq	r7, r7, #128	; 0x80
+     c74:	0affffdd 	beq	bf0 <rxmodem+0x5c>
+     c78:	e3a00000 	mov	r0, #0	; 0x0
+		}
+	}
+}
+     c7c:	e91ba8f0 	ldmdb	fp, {r4, r5, r6, r7, fp, sp, pc}
+     c80:	e3500004 	cmp	r0, #4	; 0x4
+     c84:	1afffffb 	bne	c78 <rxmodem+0xe4>
+     c88:	e3a00006 	mov	r0, #6	; 0x6
+     c8c:	ebffff8e 	bl	acc <putc>
+     c90:	e1a00007 	mov	r0, r7
+     c94:	e91ba8f0 	ldmdb	fp, {r4, r5, r6, r7, fp, sp, pc}
+     c98:	000023a8 	andeq	r2, r0, r8, lsr #7
+     c9c:	01312d00 	teqeq	r1, r0, lsl #26
+
+00000ca0 <crc16_ccitt>:
+
+/* CRC16 implementation acording to CCITT standards */
+
+static const unsigned short crc16tab[256]= {
+	0x0000,0x1021,0x2042,0x3063,0x4084,0x50a5,0x60c6,0x70e7,
+	0x8108,0x9129,0xa14a,0xb16b,0xc18c,0xd1ad,0xe1ce,0xf1ef,
+	0x1231,0x0210,0x3273,0x2252,0x52b5,0x4294,0x72f7,0x62d6,
+	0x9339,0x8318,0xb37b,0xa35a,0xd3bd,0xc39c,0xf3ff,0xe3de,
+	0x2462,0x3443,0x0420,0x1401,0x64e6,0x74c7,0x44a4,0x5485,
+	0xa56a,0xb54b,0x8528,0x9509,0xe5ee,0xf5cf,0xc5ac,0xd58d,
+	0x3653,0x2672,0x1611,0x0630,0x76d7,0x66f6,0x5695,0x46b4,
+	0xb75b,0xa77a,0x9719,0x8738,0xf7df,0xe7fe,0xd79d,0xc7bc,
+	0x48c4,0x58e5,0x6886,0x78a7,0x0840,0x1861,0x2802,0x3823,
+	0xc9cc,0xd9ed,0xe98e,0xf9af,0x8948,0x9969,0xa90a,0xb92b,
+	0x5af5,0x4ad4,0x7ab7,0x6a96,0x1a71,0x0a50,0x3a33,0x2a12,
+	0xdbfd,0xcbdc,0xfbbf,0xeb9e,0x9b79,0x8b58,0xbb3b,0xab1a,
+	0x6ca6,0x7c87,0x4ce4,0x5cc5,0x2c22,0x3c03,0x0c60,0x1c41,
+	0xedae,0xfd8f,0xcdec,0xddcd,0xad2a,0xbd0b,0x8d68,0x9d49,
+	0x7e97,0x6eb6,0x5ed5,0x4ef4,0x3e13,0x2e32,0x1e51,0x0e70,
+	0xff9f,0xefbe,0xdfdd,0xcffc,0xbf1b,0xaf3a,0x9f59,0x8f78,
+	0x9188,0x81a9,0xb1ca,0xa1eb,0xd10c,0xc12d,0xf14e,0xe16f,
+	0x1080,0x00a1,0x30c2,0x20e3,0x5004,0x4025,0x7046,0x6067,
+	0x83b9,0x9398,0xa3fb,0xb3da,0xc33d,0xd31c,0xe37f,0xf35e,
+	0x02b1,0x1290,0x22f3,0x32d2,0x4235,0x5214,0x6277,0x7256,
+	0xb5ea,0xa5cb,0x95a8,0x8589,0xf56e,0xe54f,0xd52c,0xc50d,
+	0x34e2,0x24c3,0x14a0,0x0481,0x7466,0x6447,0x5424,0x4405,
+	0xa7db,0xb7fa,0x8799,0x97b8,0xe75f,0xf77e,0xc71d,0xd73c,
+	0x26d3,0x36f2,0x0691,0x16b0,0x6657,0x7676,0x4615,0x5634,
+	0xd94c,0xc96d,0xf90e,0xe92f,0x99c8,0x89e9,0xb98a,0xa9ab,
+	0x5844,0x4865,0x7806,0x6827,0x18c0,0x08e1,0x3882,0x28a3,
+	0xcb7d,0xdb5c,0xeb3f,0xfb1e,0x8bf9,0x9bd8,0xabbb,0xbb9a,
+	0x4a75,0x5a54,0x6a37,0x7a16,0x0af1,0x1ad0,0x2ab3,0x3a92,
+	0xfd2e,0xed0f,0xdd6c,0xcd4d,0xbdaa,0xad8b,0x9de8,0x8dc9,
+	0x7c26,0x6c07,0x5c64,0x4c45,0x3ca2,0x2c83,0x1ce0,0x0cc1,
+	0xef1f,0xff3e,0xcf5d,0xdf7c,0xaf9b,0xbfba,0x8fd9,0x9ff8,
+	0x6e17,0x7e36,0x4e55,0x5e74,0x2e93,0x3eb2,0x0ed1,0x1ef0
+};
+  
+unsigned short crc16_ccitt(const void *buf, int len)
+{
+	int counter;
+	unsigned short crc = 0;
+     ca0:	e3a02000 	mov	r2, #0	; 0x0
+	for( counter = 0; counter < len; counter++)
+     ca4:	e1520001 	cmp	r2, r1
+     ca8:	aa00000b 	bge	cdc <crc16_ccitt+0x3c>
+     cac:	e1a0c001 	mov	ip, r1
+		crc = (crc<<8) ^ crc16tab[((crc>>8) ^ *(char *)buf++)&0x00FF];
+     cb0:	e4d03001 	ldrb	r3, [r0], #1
+     cb4:	e1a01802 	mov	r1, r2, lsl #16
+     cb8:	e0233c21 	eor	r3, r3, r1, lsr #24
+     cbc:	e59f2024 	ldr	r2, [pc, #36]	; ce8 <crc16_ccitt+0x48>
+     cc0:	e1a03083 	mov	r3, r3, lsl #1
+     cc4:	e19330b2 	ldrh	r3, [r3, r2]
+     cc8:	e0233421 	eor	r3, r3, r1, lsr #8
+     ccc:	e1a03803 	mov	r3, r3, lsl #16
+     cd0:	e25cc001 	subs	ip, ip, #1	; 0x1
+     cd4:	e1a02843 	mov	r2, r3, asr #16
+     cd8:	1afffff4 	bne	cb0 <crc16_ccitt+0x10>
+	return crc;
+     cdc:	e1a00802 	mov	r0, r2, lsl #16
+     ce0:	e1a00820 	mov	r0, r0, lsr #16
+}
+     ce4:	e1a0f00e 	mov	pc, lr
+     ce8:	00001f58 	andeq	r1, r0, r8, asr pc
+
+00000cec <AT91F_SpiInit>:
+/*	SPI DataFlash Init					     */
+/*-------------------------------------------------------------------*/
+void AT91F_SpiInit(void) {
+	/* Configure PIOs */
+	AT91C_BASE_PIOA->PIO_ASR = AT91C_PA3_NPCS0 | AT91C_PA1_MOSI | AT91C_PA0_MISO | AT91C_PA2_SPCK;
+     cec:	e59f2038 	ldr	r2, [pc, #56]	; d2c <AT91F_SpiInit+0x40>
+     cf0:	e3a0300f 	mov	r3, #15	; 0xf
+     cf4:	e5823070 	str	r3, [r2, #112]
+	AT91C_BASE_PIOA->PIO_PDR = AT91C_PA3_NPCS0 | AT91C_PA1_MOSI | AT91C_PA0_MISO | AT91C_PA2_SPCK;
+     cf8:	e5823004 	str	r3, [r2, #4]
+	/* Enable CLock */
+	AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_SPI;
+     cfc:	e59f302c 	ldr	r3, [pc, #44]	; d30 <AT91F_SpiInit+0x44>
+
+	/* Reset the SPI */
+	AT91C_BASE_SPI->SPI_CR = AT91C_SPI_SWRST;
+     d00:	e59f102c 	ldr	r1, [pc, #44]	; d34 <AT91F_SpiInit+0x48>
+     d04:	e2822b0b 	add	r2, r2, #11264	; 0x2c00
+     d08:	e5832010 	str	r2, [r3, #16]
+     d0c:	e2833d12 	add	r3, r3, #1152	; 0x480
+     d10:	e5813000 	str	r3, [r1]
+
+	/* Configure SPI in Master Mode with No CS selected !!! */
+	AT91C_BASE_SPI->SPI_MR = AT91C_SPI_MSTR | AT91C_SPI_MODFDIS | AT91C_SPI_PCS;
+     d14:	e59f301c 	ldr	r3, [pc, #28]	; d38 <AT91F_SpiInit+0x4c>
+
+	/* Configure CS0 */
+	*(AT91C_SPI_CSR + 0) = AT91C_SPI_CPOL | (AT91C_SPI_DLYBS & 0x100000) | ((AT91C_MASTER_CLOCK / (2*SPI_CLK)) << 8);
+     d18:	e59f201c 	ldr	r2, [pc, #28]	; d3c <AT91F_SpiInit+0x50>
+     d1c:	e5813004 	str	r3, [r1, #4]
+     d20:	e59f3018 	ldr	r3, [pc, #24]	; d40 <AT91F_SpiInit+0x54>
+     d24:	e5832000 	str	r2, [r3]
+     d28:	e1a0f00e 	mov	pc, lr
+     d2c:	fffff400 	swinv	0x00fff400
+     d30:	fffffc00 	swinv	0x00fffc00
+     d34:	fffe0000 	swinv	0x00fe0000
+     d38:	000f0011 	andeq	r0, pc, r1, lsl r0
+     d3c:	00100501 	andeqs	r0, r0, r1, lsl #10
+     d40:	fffe0030 	swinv	0x00fe0030
+
+00000d44 <AT91F_SpiEnable>:
+}
+
+void AT91F_SpiEnable(void) {
+  AT91C_BASE_SPI->SPI_MR &= 0xFFF0FFFF;
+     d44:	e59f2020 	ldr	r2, [pc, #32]	; d6c <AT91F_SpiEnable+0x28>
+     d48:	e5923004 	ldr	r3, [r2, #4]
+     d4c:	e3c3380f 	bic	r3, r3, #983040	; 0xf0000
+     d50:	e5823004 	str	r3, [r2, #4]
+  AT91C_BASE_SPI->SPI_MR |= ((AT91C_SPI_PCS0_SERIAL_DATAFLASH<<16) & AT91C_SPI_PCS);
+     d54:	e5923004 	ldr	r3, [r2, #4]
+     d58:	e383380e 	orr	r3, r3, #917504	; 0xe0000
+     d5c:	e5823004 	str	r3, [r2, #4]
+	
+  /* SPI_Enable */
+  AT91C_BASE_SPI->SPI_CR = AT91C_SPI_SPIEN;
+     d60:	e3a03001 	mov	r3, #1	; 0x1
+     d64:	e5823000 	str	r3, [r2]
+     d68:	e1a0f00e 	mov	pc, lr
+     d6c:	fffe0000 	swinv	0x00fe0000
+
+00000d70 <AT91F_SpiWrite>:
+}
+
+/*----------------------------------------------------------------------------*/
+/* \fn    AT91F_SpiWrite						      */
+/* \brief Set the PDC registers for a transfert				      */
+/*----------------------------------------------------------------------------*/
+unsigned int AT91F_SpiWrite ( AT91PS_DataflashDesc pDesc )
+{
+     d70:	e1a0c00d 	mov	ip, sp
+     d74:	e92dd830 	stmdb	sp!, {r4, r5, fp, ip, lr, pc}
+	unsigned int timeout;
+
+	pDesc->state = BUSY;
+     d78:	e3a03001 	mov	r3, #1	; 0x1
+     d7c:	e5c03020 	strb	r3, [r0, #32]
+
+	AT91C_BASE_SPI->SPI_PTCR = AT91C_PDC_TXTDIS + AT91C_PDC_RXTDIS;
+     d80:	e59f50b8 	ldr	r5, [pc, #184]	; e40 <AT91F_SpiWrite+0xd0>
+     d84:	e59f30b8 	ldr	r3, [pc, #184]	; e44 <AT91F_SpiWrite+0xd4>
+     d88:	e5853120 	str	r3, [r5, #288]
+
+	/* Initialize the Transmit and Receive Pointer */
+	AT91C_BASE_SPI->SPI_RPR = (unsigned int)pDesc->rx_cmd_pt ;
+     d8c:	e5903008 	ldr	r3, [r0, #8]
+     d90:	e5853100 	str	r3, [r5, #256]
+	AT91C_BASE_SPI->SPI_TPR = (unsigned int)pDesc->tx_cmd_pt ;
+     d94:	e5903000 	ldr	r3, [r0]
+     d98:	e5853108 	str	r3, [r5, #264]
+
+	/* Intialize the Transmit and Receive Counters */
+	AT91C_BASE_SPI->SPI_RCR = pDesc->rx_cmd_size;
+     d9c:	e590300c 	ldr	r3, [r0, #12]
+     da0:	e5853104 	str	r3, [r5, #260]
+	AT91C_BASE_SPI->SPI_TCR = pDesc->tx_cmd_size;
+     da4:	e5903004 	ldr	r3, [r0, #4]
+     da8:	e585310c 	str	r3, [r5, #268]
+
+	if ( pDesc->tx_data_size != 0 ) {
+     dac:	e5903014 	ldr	r3, [r0, #20]
+     db0:	e3530000 	cmp	r3, #0	; 0x0
+     db4:	e24cb004 	sub	fp, ip, #4	; 0x4
+     db8:	e1a04000 	mov	r4, r0
+     dbc:	0a000007 	beq	de0 <AT91F_SpiWrite+0x70>
+		/* Initialize the Next Transmit and Next Receive Pointer */
+		AT91C_BASE_SPI->SPI_RNPR = (unsigned int)pDesc->rx_data_pt ;
+     dc0:	e5903018 	ldr	r3, [r0, #24]
+     dc4:	e5853110 	str	r3, [r5, #272]
+		AT91C_BASE_SPI->SPI_TNPR = (unsigned int)pDesc->tx_data_pt ;
+     dc8:	e5903010 	ldr	r3, [r0, #16]
+     dcc:	e5853118 	str	r3, [r5, #280]
+
+		/* Intialize the Next Transmit and Next Receive Counters */
+		AT91C_BASE_SPI->SPI_RNCR = pDesc->rx_data_size ;
+     dd0:	e590301c 	ldr	r3, [r0, #28]
+     dd4:	e5853114 	str	r3, [r5, #276]
+		AT91C_BASE_SPI->SPI_TNCR = pDesc->tx_data_size ;
+     dd8:	e5903014 	ldr	r3, [r0, #20]
+     ddc:	e585311c 	str	r3, [r5, #284]
+	}
+
+	/* arm simple, non interrupt dependent timer */
+	reset_timer_masked();
+     de0:	eb0003a3 	bl	1c74 <reset_timer_masked>
+	timeout = 0;
+
+	AT91C_BASE_SPI->SPI_PTCR = AT91C_PDC_TXTEN + AT91C_PDC_RXTEN;
+     de4:	e59f305c 	ldr	r3, [pc, #92]	; e48 <AT91F_SpiWrite+0xd8>
+     de8:	e5853120 	str	r3, [r5, #288]
+     dec:	e3a00000 	mov	r0, #0	; 0x0
+	while(!(AT91C_BASE_SPI->SPI_SR & AT91C_SPI_RXBUFF) && ((timeout = get_timer_masked() ) < CFG_SPI_WRITE_TOUT));
+     df0:	e59f5048 	ldr	r5, [pc, #72]	; e40 <AT91F_SpiWrite+0xd0>
+     df4:	e5953010 	ldr	r3, [r5, #16]
+     df8:	e3130040 	tst	r3, #64	; 0x40
+     dfc:	1a000003 	bne	e10 <AT91F_SpiWrite+0xa0>
+     e00:	eb0003a9 	bl	1cac <get_timer_masked>
+     e04:	e59f3040 	ldr	r3, [pc, #64]	; e4c <AT91F_SpiWrite+0xdc>
+     e08:	e1500003 	cmp	r0, r3
+     e0c:	9afffff7 	bls	df0 <AT91F_SpiWrite+0x80>
+	AT91C_BASE_SPI->SPI_PTCR = AT91C_PDC_TXTDIS + AT91C_PDC_RXTDIS;
+	pDesc->state = IDLE;
+
+	if (timeout >= CFG_SPI_WRITE_TOUT){
+     e10:	e59f3034 	ldr	r3, [pc, #52]	; e4c <AT91F_SpiWrite+0xdc>
+     e14:	e1500003 	cmp	r0, r3
+     e18:	e59f3024 	ldr	r3, [pc, #36]	; e44 <AT91F_SpiWrite+0xd4>
+     e1c:	e5853120 	str	r3, [r5, #288]
+     e20:	e3a03000 	mov	r3, #0	; 0x0
+     e24:	e5c43020 	strb	r3, [r4, #32]
+		puts("Error Timeout\n\r");
+		return DATAFLASH_ERROR;
+	}
+
+	return DATAFLASH_OK;
+     e28:	93a00001 	movls	r0, #1	; 0x1
+}
+     e2c:	991ba830 	ldmlsdb	fp, {r4, r5, fp, sp, pc}
+     e30:	e59f0018 	ldr	r0, [pc, #24]	; e50 <AT91F_SpiWrite+0xe0>
+     e34:	ebffff35 	bl	b10 <puts>
+     e38:	e3a00002 	mov	r0, #2	; 0x2
+     e3c:	e91ba830 	ldmdb	fp, {r4, r5, fp, sp, pc}
+     e40:	fffe0000 	swinv	0x00fe0000
+     e44:	00000202 	andeq	r0, r0, r2, lsl #4
+     e48:	00000101 	andeq	r0, r0, r1, lsl #2
+     e4c:	08ed27ff 	stmeqia	sp!, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, sp}^
+     e50:	000023c4 	andeq	r2, r0, r4, asr #7
+
+00000e54 <AT91F_DataFlashSendCommand>:
+
+
+/*----------------------------------------------------------------------*/
+/* \fn    AT91F_DataFlashSendCommand					*/
+/* \brief Generic function to send a command to the dataflash		*/
+/*----------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_DataFlashSendCommand(
+	AT91PS_DataFlash pDataFlash,
+	unsigned char OpCode,
+	unsigned int CmdSize,
+	unsigned int DataflashAddress)
+{
+     e54:	e1a0c00d 	mov	ip, sp
+     e58:	e92ddef0 	stmdb	sp!, {r4, r5, r6, r7, r9, sl, fp, ip, lr, pc}
+     e5c:	e24cb004 	sub	fp, ip, #4	; 0x4
+     e60:	e24dd00c 	sub	sp, sp, #12	; 0xc
+     e64:	e1a07000 	mov	r7, r0
+    unsigned int adr;
+
+	if ( (pDataFlash->pDataFlashDesc->state) != IDLE)
+     e68:	e5900000 	ldr	r0, [r0]
+     e6c:	e50b002c 	str	r0, [fp, -#44]
+     e70:	e5d00020 	ldrb	r0, [r0, #32]
+     e74:	e20000ff 	and	r0, r0, #255	; 0xff
+     e78:	e3500000 	cmp	r0, #0	; 0x0
+     e7c:	e50b0030 	str	r0, [fp, -#48]
+     e80:	e50b2028 	str	r2, [fp, -#40]
+     e84:	e3a00000 	mov	r0, #0	; 0x0
+     e88:	e1a0a003 	mov	sl, r3
+     e8c:	e20190ff 	and	r9, r1, #255	; 0xff
+     e90:	191baef0 	ldmnedb	fp, {r4, r5, r6, r7, r9, sl, fp, sp, pc}
+		return DATAFLASH_BUSY;
+
+	/* process the address to obtain page address and byte address */
+	adr = ((DataflashAddress / (pDataFlash->pDevice->pages_size)) << pDataFlash->pDevice->page_offset) + (DataflashAddress % (pDataFlash->pDevice->pages_size));
+     e94:	e5976004 	ldr	r6, [r7, #4]
+     e98:	e5965004 	ldr	r5, [r6, #4]
+     e9c:	e1a00003 	mov	r0, r3
+     ea0:	e1a01005 	mov	r1, r5
+     ea4:	eb0003b8 	bl	1d8c <__udivsi3>
+     ea8:	e5963008 	ldr	r3, [r6, #8]
+     eac:	e1a01005 	mov	r1, r5
+     eb0:	e1a04000 	mov	r4, r0
+     eb4:	e1a0000a 	mov	r0, sl
+     eb8:	e1a04314 	mov	r4, r4, lsl r3
+     ebc:	eb0003d8 	bl	1e24 <__umodsi3>
+
+	/* fill the  command  buffer */
+	pDataFlash->pDataFlashDesc->command[0] = OpCode;
+     ec0:	e51b202c 	ldr	r2, [fp, -#44]
+     ec4:	e5c29022 	strb	r9, [r2, #34]
+	if (pDataFlash->pDevice->pages_number >= 16384) {
+     ec8:	e5973004 	ldr	r3, [r7, #4]
+     ecc:	e5933000 	ldr	r3, [r3]
+     ed0:	e0844000 	add	r4, r4, r0
+     ed4:	e3530901 	cmp	r3, #16384	; 0x4000
+     ed8:	e204340f 	and	r3, r4, #251658240	; 0xf000000
+     edc:	e1a00c23 	mov	r0, r3, lsr #24
+     ee0:	e1a02824 	mov	r2, r4, lsr #16
+     ee4:	e1a0c824 	mov	ip, r4, lsr #16
+     ee8:	e1a01424 	mov	r1, r4, lsr #8
+     eec:	e1a05424 	mov	r5, r4, lsr #8
+     ef0:	ba00001c 	blt	f68 <AT91F_DataFlashSendCommand+0x114>
+		pDataFlash->pDataFlashDesc->command[1] = (unsigned char)((adr & 0x0F000000) >> 24);
+     ef4:	e5973000 	ldr	r3, [r7]
+     ef8:	e5c30023 	strb	r0, [r3, #35]
+		pDataFlash->pDataFlashDesc->command[2] = (unsigned char)((adr & 0x00FF0000) >> 16);
+     efc:	e5973000 	ldr	r3, [r7]
+     f00:	e5c3c024 	strb	ip, [r3, #36]
+		pDataFlash->pDataFlashDesc->command[3] = (unsigned char)((adr & 0x0000FF00) >> 8);
+     f04:	e5973000 	ldr	r3, [r7]
+     f08:	e5c35025 	strb	r5, [r3, #37]
+		pDataFlash->pDataFlashDesc->command[4] = (unsigned char)(adr & 0x000000FF);
+     f0c:	e5973000 	ldr	r3, [r7]
+     f10:	e5c34026 	strb	r4, [r3, #38]
+	} else {
+		pDataFlash->pDataFlashDesc->command[1] = (unsigned char)((adr & 0x00FF0000) >> 16);
+		pDataFlash->pDataFlashDesc->command[2] = (unsigned char)((adr & 0x0000FF00) >> 8);
+		pDataFlash->pDataFlashDesc->command[3] = (unsigned char)(adr & 0x000000FF) ;
+		pDataFlash->pDataFlashDesc->command[4] = 0;
+	}
+	pDataFlash->pDataFlashDesc->command[5] = 0;
+     f14:	e5973000 	ldr	r3, [r7]
+     f18:	e3a02000 	mov	r2, #0	; 0x0
+     f1c:	e5c32027 	strb	r2, [r3, #39]
+	pDataFlash->pDataFlashDesc->command[6] = 0;
+     f20:	e5973000 	ldr	r3, [r7]
+     f24:	e5c32028 	strb	r2, [r3, #40]
+	pDataFlash->pDataFlashDesc->command[7] = 0;
+     f28:	e5973000 	ldr	r3, [r7]
+     f2c:	e5c32029 	strb	r2, [r3, #41]
+
+	/* Initialize the SpiData structure for the spi write fuction */
+	pDataFlash->pDataFlashDesc->tx_cmd_pt   =  pDataFlash->pDataFlashDesc->command ;
+     f30:	e5972000 	ldr	r2, [r7]
+     f34:	e2823022 	add	r3, r2, #34	; 0x22
+     f38:	e5823000 	str	r3, [r2]
+	pDataFlash->pDataFlashDesc->tx_cmd_size =  CmdSize ;
+     f3c:	e51b0028 	ldr	r0, [fp, -#40]
+     f40:	e5973000 	ldr	r3, [r7]
+     f44:	e5830004 	str	r0, [r3, #4]
+	pDataFlash->pDataFlashDesc->rx_cmd_pt   =  pDataFlash->pDataFlashDesc->command ;
+     f48:	e5972000 	ldr	r2, [r7]
+     f4c:	e2823022 	add	r3, r2, #34	; 0x22
+     f50:	e5823008 	str	r3, [r2, #8]
+	pDataFlash->pDataFlashDesc->rx_cmd_size =  CmdSize ;
+     f54:	e5973000 	ldr	r3, [r7]
+     f58:	e583000c 	str	r0, [r3, #12]
+
+	/* send the command and read the data */
+	return AT91F_SpiWrite (pDataFlash->pDataFlashDesc);
+     f5c:	e5970000 	ldr	r0, [r7]
+     f60:	e91b6ef0 	ldmdb	fp, {r4, r5, r6, r7, r9, sl, fp, sp, lr}
+     f64:	eaffff81 	b	d70 <AT91F_SpiWrite>
+     f68:	e5973000 	ldr	r3, [r7]
+     f6c:	e5c32023 	strb	r2, [r3, #35]
+     f70:	e5973000 	ldr	r3, [r7]
+     f74:	e5c31024 	strb	r1, [r3, #36]
+     f78:	e5973000 	ldr	r3, [r7]
+     f7c:	e5c34025 	strb	r4, [r3, #37]
+     f80:	e51bc030 	ldr	ip, [fp, -#48]
+     f84:	e5973000 	ldr	r3, [r7]
+     f88:	e5c3c026 	strb	ip, [r3, #38]
+     f8c:	eaffffe0 	b	f14 <AT91F_DataFlashSendCommand+0xc0>
+
+00000f90 <AT91F_DataFlashGetStatus>:
+}
+
+
+/*----------------------------------------------------------------------*/
+/* \fn    AT91F_DataFlashGetStatus					*/
+/* \brief Read the status register of the dataflash			*/
+/*----------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_DataFlashGetStatus(AT91PS_DataflashDesc pDesc)
+{
+     f90:	e1a0c00d 	mov	ip, sp
+     f94:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+	AT91S_DataFlashStatus status;
+
+	/* if a transfert is in progress ==> return 0 */
+	if( (pDesc->state) != IDLE)
+     f98:	e5d03020 	ldrb	r3, [r0, #32]
+     f9c:	e20320ff 	and	r2, r3, #255	; 0xff
+     fa0:	e3520000 	cmp	r2, #0	; 0x0
+     fa4:	e24cb004 	sub	fp, ip, #4	; 0x4
+     fa8:	e1a04000 	mov	r4, r0
+     fac:	e3a0c002 	mov	ip, #2	; 0x2
+     fb0:	e2801022 	add	r1, r0, #34	; 0x22
+     fb4:	e3a03000 	mov	r3, #0	; 0x0
+     fb8:	0a000001 	beq	fc4 <AT91F_DataFlashGetStatus+0x34>
+		return DATAFLASH_BUSY;
+
+	/* first send the read status command (D7H) */
+	pDesc->command[0] = DB_STATUS;
+	pDesc->command[1] = 0;
+
+	pDesc->DataFlash_state  = GET_STATUS;
+	pDesc->tx_data_size 	= 0 ;	/* Transmit the command and receive response */
+	pDesc->tx_cmd_pt 		= pDesc->command ;
+	pDesc->rx_cmd_pt 		= pDesc->command ;
+	pDesc->rx_cmd_size 		= 2 ;
+	pDesc->tx_cmd_size 		= 2 ;
+	status = AT91F_SpiWrite (pDesc);
+
+	pDesc->DataFlash_state = *( (unsigned char *) (pDesc->rx_cmd_pt) +1);
+
+	return status;
+}
+     fbc:	e1a00003 	mov	r0, r3
+     fc0:	e91ba810 	ldmdb	fp, {r4, fp, sp, pc}
+     fc4:	e3e03028 	mvn	r3, #40	; 0x28
+     fc8:	e5c03022 	strb	r3, [r0, #34]
+     fcc:	e2833038 	add	r3, r3, #56	; 0x38
+     fd0:	e5c03021 	strb	r3, [r0, #33]
+     fd4:	e5802014 	str	r2, [r0, #20]
+     fd8:	e5801008 	str	r1, [r0, #8]
+     fdc:	e580c004 	str	ip, [r0, #4]
+     fe0:	e5c02023 	strb	r2, [r0, #35]
+     fe4:	e5801000 	str	r1, [r0]
+     fe8:	e580c00c 	str	ip, [r0, #12]
+     fec:	ebffff5f 	bl	d70 <AT91F_SpiWrite>
+     ff0:	e5943008 	ldr	r3, [r4, #8]
+     ff4:	e5d33001 	ldrb	r3, [r3, #1]
+     ff8:	e5c43021 	strb	r3, [r4, #33]
+     ffc:	e1a03000 	mov	r3, r0
+    1000:	eaffffed 	b	fbc <AT91F_DataFlashGetStatus+0x2c>
+
+00001004 <AT91F_DataFlashWaitReady>:
+
+
+/*----------------------------------------------------------------------*/
+/* \fn    AT91F_DataFlashWaitReady					*/
+/* \brief wait for dataflash ready (bit7 of the status register == 1)	*/
+/*----------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_DataFlashWaitReady(AT91PS_DataflashDesc pDataFlashDesc, unsigned int timeout)
+{
+    1004:	e1a0c00d 	mov	ip, sp
+	pDataFlashDesc->DataFlash_state = IDLE;
+    1008:	e3a03000 	mov	r3, #0	; 0x0
+    100c:	e92dd830 	stmdb	sp!, {r4, r5, fp, ip, lr, pc}
+    1010:	e5c03021 	strb	r3, [r0, #33]
+    1014:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1018:	e1a05000 	mov	r5, r0
+    101c:	e1a04001 	mov	r4, r1
+
+	do {
+		AT91F_DataFlashGetStatus(pDataFlashDesc);
+    1020:	e1a00005 	mov	r0, r5
+    1024:	ebffffd9 	bl	f90 <AT91F_DataFlashGetStatus>
+		timeout--;
+	} while( ((pDataFlashDesc->DataFlash_state & 0x80) != 0x80) && (timeout > 0) );
+    1028:	e5d53021 	ldrb	r3, [r5, #33]
+    102c:	e3130080 	tst	r3, #128	; 0x80
+    1030:	e2444001 	sub	r4, r4, #1	; 0x1
+    1034:	1a000001 	bne	1040 <AT91F_DataFlashWaitReady+0x3c>
+    1038:	e3540000 	cmp	r4, #0	; 0x0
+    103c:	1afffff7 	bne	1020 <AT91F_DataFlashWaitReady+0x1c>
+
+	if((pDataFlashDesc->DataFlash_state & 0x80) != 0x80)
+    1040:	e5d53021 	ldrb	r3, [r5, #33]
+    1044:	e3130080 	tst	r3, #128	; 0x80
+    1048:	13a00001 	movne	r0, #1	; 0x1
+    104c:	03a00002 	moveq	r0, #2	; 0x2
+		return DATAFLASH_ERROR;
+
+	return DATAFLASH_OK;
+}
+    1050:	e91ba830 	ldmdb	fp, {r4, r5, fp, sp, pc}
+
+00001054 <AT91F_DataFlashContinuousRead>:
+
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_DataFlashContinuousRead 				*/
+/* Object              : Continuous stream Read 				*/
+/* Input Parameters    : DataFlash Service					*/
+/*						: <src> = dataflash address	*/
+/*                     : <*dataBuffer> = data buffer pointer			*/
+/*                     : <sizeToRead> = data buffer size			*/
+/* Return value		: State of the dataflash				*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_DataFlashContinuousRead (
+	AT91PS_DataFlash pDataFlash,
+	int src,
+	unsigned char *dataBuffer,
+	int sizeToRead )
+{
+    1054:	e92d4070 	stmdb	sp!, {r4, r5, r6, lr}
+	AT91S_DataFlashStatus status;
+	/* Test the size to read in the device */
+	if ( (src + sizeToRead) > (pDataFlash->pDevice->pages_size * (pDataFlash->pDevice->pages_number)))
+    1058:	e590c004 	ldr	ip, [r0, #4]
+    105c:	e89c1010 	ldmia	ip, {r4, ip}
+    1060:	e004049c 	mul	r4, ip, r4
+    1064:	e1a06003 	mov	r6, r3
+    1068:	e1a0c001 	mov	ip, r1
+    106c:	e08cc006 	add	ip, ip, r6
+    1070:	e15c0004 	cmp	ip, r4
+    1074:	e1a03001 	mov	r3, r1
+    1078:	e1a04002 	mov	r4, r2
+    107c:	e1a05000 	mov	r5, r0
+    1080:	e3a010e8 	mov	r1, #232	; 0xe8
+    1084:	e3a02008 	mov	r2, #8	; 0x8
+    1088:	da000001 	ble	1094 <AT91F_DataFlashContinuousRead+0x40>
+		return DATAFLASH_MEMORY_OVERFLOW;
+
+	pDataFlash->pDataFlashDesc->rx_data_pt = dataBuffer;
+	pDataFlash->pDataFlashDesc->rx_data_size = sizeToRead;
+	pDataFlash->pDataFlashDesc->tx_data_pt = dataBuffer;
+	pDataFlash->pDataFlashDesc->tx_data_size = sizeToRead;
+
+	status = AT91F_DataFlashSendCommand (pDataFlash, DB_CONTINUOUS_ARRAY_READ, 8, src);
+	/* Send the command to the dataflash */
+	return(status);
+}
+    108c:	e3a00003 	mov	r0, #3	; 0x3
+    1090:	e8bd8070 	ldmia	sp!, {r4, r5, r6, pc}
+    1094:	e590c000 	ldr	ip, [r0]
+    1098:	e58c4018 	str	r4, [ip, #24]
+    109c:	e590c000 	ldr	ip, [r0]
+    10a0:	e58c601c 	str	r6, [ip, #28]
+    10a4:	e590c000 	ldr	ip, [r0]
+    10a8:	e58c4010 	str	r4, [ip, #16]
+    10ac:	e590c000 	ldr	ip, [r0]
+    10b0:	e58c6014 	str	r6, [ip, #20]
+    10b4:	e8bd4070 	ldmia	sp!, {r4, r5, r6, lr}
+    10b8:	eaffff65 	b	e54 <AT91F_DataFlashSendCommand>
+
+000010bc <AT91F_DataFlashPagePgmBuf>:
+
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_DataFlashPagePgmBuf				*/
+/* Object              : Main memory page program through buffer 1 or buffer 2	*/
+/* Input Parameters    : DataFlash Service					*/
+/*						: <*src> = Source buffer	*/
+/*                     : <dest> = dataflash destination address			*/
+/*                     : <SizeToWrite> = data buffer size			*/
+/* Return value		: State of the dataflash				*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_DataFlashPagePgmBuf(
+	AT91PS_DataFlash pDataFlash,
+	unsigned char *src,
+	unsigned int dest,
+	unsigned int SizeToWrite)
+{
+    10bc:	e92d4010 	stmdb	sp!, {r4, lr}
+	int cmdsize;
+	pDataFlash->pDataFlashDesc->tx_data_pt = src ;
+    10c0:	e590c000 	ldr	ip, [r0]
+    10c4:	e58c1010 	str	r1, [ip, #16]
+	pDataFlash->pDataFlashDesc->tx_data_size = SizeToWrite ;
+    10c8:	e590c000 	ldr	ip, [r0]
+    10cc:	e58c3014 	str	r3, [ip, #20]
+	pDataFlash->pDataFlashDesc->rx_data_pt = src;
+    10d0:	e590c000 	ldr	ip, [r0]
+    10d4:	e58c1018 	str	r1, [ip, #24]
+	pDataFlash->pDataFlashDesc->rx_data_size = SizeToWrite;
+    10d8:	e5901000 	ldr	r1, [r0]
+    10dc:	e581301c 	str	r3, [r1, #28]
+
+	cmdsize = 4;
+	/* Send the command to the dataflash */
+	if (pDataFlash->pDevice->pages_number >= 16384)
+    10e0:	e5903004 	ldr	r3, [r0, #4]
+    10e4:	e5931000 	ldr	r1, [r3]
+    10e8:	e3510901 	cmp	r1, #16384	; 0x4000
+    10ec:	b3a01004 	movlt	r1, #4	; 0x4
+    10f0:	a3a01005 	movge	r1, #5	; 0x5
+    10f4:	e1a03002 	mov	r3, r2
+    10f8:	e1a04000 	mov	r4, r0
+		cmdsize = 5;
+	return(AT91F_DataFlashSendCommand (pDataFlash, DB_PAGE_PGM_BUF1, cmdsize, dest));
+    10fc:	e1a02001 	mov	r2, r1
+    1100:	e3a01082 	mov	r1, #130	; 0x82
+    1104:	e8bd4010 	ldmia	sp!, {r4, lr}
+    1108:	eaffff51 	b	e54 <AT91F_DataFlashSendCommand>
+
+0000110c <AT91F_MainMemoryToBufferTransfert>:
+}
+
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_MainMemoryToBufferTransfert			*/
+/* Object              : Read a page in the SRAM Buffer 1 or 2			*/
+/* Input Parameters    : DataFlash Service					*/
+/*                     : Page concerned						*/
+/*                     : 							*/
+/* Return value		: State of the dataflash				*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_MainMemoryToBufferTransfert(
+	AT91PS_DataFlash pDataFlash,
+	unsigned char BufferCommand,
+	unsigned int page)
+{
+    110c:	e20130ff 	and	r3, r1, #255	; 0xff
+	int cmdsize;
+	/* Test if the buffer command is legal */
+	if ((BufferCommand != DB_PAGE_2_BUF1_TRF) && (BufferCommand != DB_PAGE_2_BUF2_TRF))
+    1110:	e253c055 	subs	ip, r3, #85	; 0x55
+    1114:	13a0c001 	movne	ip, #1	; 0x1
+    1118:	e3530053 	cmp	r3, #83	; 0x53
+    111c:	03a0c000 	moveq	ip, #0	; 0x0
+    1120:	120cc001 	andne	ip, ip, #1	; 0x1
+    1124:	e35c0000 	cmp	ip, #0	; 0x0
+    1128:	e92d4010 	stmdb	sp!, {r4, lr}
+    112c:	e1a01003 	mov	r1, r3
+    1130:	e1a04002 	mov	r4, r2
+    1134:	0a000001 	beq	1140 <AT91F_MainMemoryToBufferTransfert+0x34>
+		return DATAFLASH_BAD_COMMAND;
+
+	/* no data to transmit or receive */
+	pDataFlash->pDataFlashDesc->tx_data_size = 0;
+	cmdsize = 4;
+	if (pDataFlash->pDevice->pages_number >= 16384)
+		cmdsize = 5;
+	return(AT91F_DataFlashSendCommand (pDataFlash, BufferCommand, cmdsize, page*pDataFlash->pDevice->pages_size));
+}
+    1138:	e3a00004 	mov	r0, #4	; 0x4
+    113c:	e8bd8010 	ldmia	sp!, {r4, pc}
+    1140:	e5903000 	ldr	r3, [r0]
+    1144:	e583c014 	str	ip, [r3, #20]
+    1148:	e5902004 	ldr	r2, [r0, #4]
+    114c:	e5923004 	ldr	r3, [r2, #4]
+    1150:	e0030394 	mul	r3, r4, r3
+    1154:	e5922000 	ldr	r2, [r2]
+    1158:	e3520901 	cmp	r2, #16384	; 0x4000
+    115c:	b3a02004 	movlt	r2, #4	; 0x4
+    1160:	a3a02005 	movge	r2, #5	; 0x5
+    1164:	e8bd4010 	ldmia	sp!, {r4, lr}
+    1168:	eaffff39 	b	e54 <AT91F_DataFlashSendCommand>
+
+0000116c <AT91F_DataFlashWriteBuffer>:
+
+
+/*----------------------------------------------------------------------------- */
+/* Function Name       : AT91F_DataFlashWriteBuffer				*/
+/* Object              : Write data to the internal sram buffer 1 or 2		*/
+/* Input Parameters    : DataFlash Service					*/
+/*			: <BufferCommand> = command to write buffer1 or buffer2	*/
+/*                     : <*dataBuffer> = data buffer to write			*/
+/*                     : <bufferAddress> = address in the internal buffer	*/
+/*                     : <SizeToWrite> = data buffer size			*/
+/* Return value		: State of the dataflash				*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_DataFlashWriteBuffer (
+	AT91PS_DataFlash pDataFlash,
+	unsigned char BufferCommand,
+	unsigned char *dataBuffer,
+	unsigned int bufferAddress,
+	int SizeToWrite )
+{
+    116c:	e201c0ff 	and	ip, r1, #255	; 0xff
+	int cmdsize;
+	/* Test if the buffer command is legal */
+	if ((BufferCommand != DB_BUF1_WRITE) && (BufferCommand != DB_BUF2_WRITE))
+    1170:	e25c1087 	subs	r1, ip, #135	; 0x87
+    1174:	13a01001 	movne	r1, #1	; 0x1
+    1178:	e92d40f0 	stmdb	sp!, {r4, r5, r6, r7, lr}
+    117c:	e35c0084 	cmp	ip, #132	; 0x84
+    1180:	03a05000 	moveq	r5, #0	; 0x0
+    1184:	12015001 	andne	r5, r1, #1	; 0x1
+    1188:	e3550000 	cmp	r5, #0	; 0x0
+    118c:	e1a06002 	mov	r6, r2
+    1190:	e1a04003 	mov	r4, r3
+    1194:	e59d7014 	ldr	r7, [sp, #20]
+    1198:	13a00004 	movne	r0, #4	; 0x4
+		return DATAFLASH_BAD_COMMAND;
+
+	/* buffer address must be lower than page size */
+	if (bufferAddress > pDataFlash->pDevice->pages_size)
+		return DATAFLASH_BAD_ADDRESS;
+
+	if ( (pDataFlash->pDataFlashDesc->state)  != IDLE)
+		return DATAFLASH_BUSY;
+
+	/* Send first Write Command */
+	pDataFlash->pDataFlashDesc->command[0] = BufferCommand;
+	pDataFlash->pDataFlashDesc->command[1] = 0;
+	if (pDataFlash->pDevice->pages_number >= 16384) {
+	    	pDataFlash->pDataFlashDesc->command[2] = 0;
+	    	pDataFlash->pDataFlashDesc->command[3] = (unsigned char)(((unsigned int)(bufferAddress &  pDataFlash->pDevice->byte_mask)) >> 8) ;
+	    	pDataFlash->pDataFlashDesc->command[4] = (unsigned char)((unsigned int)bufferAddress  & 0x00FF) ;
+		cmdsize = 5;
+	} else {
+	    	pDataFlash->pDataFlashDesc->command[2] = (unsigned char)(((unsigned int)(bufferAddress &  pDataFlash->pDevice->byte_mask)) >> 8) ;
+	    	pDataFlash->pDataFlashDesc->command[3] = (unsigned char)((unsigned int)bufferAddress  & 0x00FF) ;
+	    	pDataFlash->pDataFlashDesc->command[4] = 0;
+		cmdsize = 4;
+	}
+
+	pDataFlash->pDataFlashDesc->tx_cmd_pt 	 = pDataFlash->pDataFlashDesc->command ;
+	pDataFlash->pDataFlashDesc->tx_cmd_size = cmdsize ;
+	pDataFlash->pDataFlashDesc->rx_cmd_pt 	 = pDataFlash->pDataFlashDesc->command ;
+	pDataFlash->pDataFlashDesc->rx_cmd_size = cmdsize ;
+
+	pDataFlash->pDataFlashDesc->rx_data_pt 	= dataBuffer ;
+	pDataFlash->pDataFlashDesc->tx_data_pt 	= dataBuffer ;
+	pDataFlash->pDataFlashDesc->rx_data_size 	= SizeToWrite ;
+	pDataFlash->pDataFlashDesc->tx_data_size 	= SizeToWrite ;
+
+	return AT91F_SpiWrite(pDataFlash->pDataFlashDesc);
+}
+    119c:	18bd80f0 	ldmneia	sp!, {r4, r5, r6, r7, pc}
+    11a0:	e5903004 	ldr	r3, [r0, #4]
+    11a4:	e5933004 	ldr	r3, [r3, #4]
+    11a8:	e1540003 	cmp	r4, r3
+    11ac:	83a00005 	movhi	r0, #5	; 0x5
+    11b0:	88bd80f0 	ldmhiia	sp!, {r4, r5, r6, r7, pc}
+    11b4:	e5902000 	ldr	r2, [r0]
+    11b8:	e5d23020 	ldrb	r3, [r2, #32]
+    11bc:	e20310ff 	and	r1, r3, #255	; 0xff
+    11c0:	e3510000 	cmp	r1, #0	; 0x0
+    11c4:	11a00005 	movne	r0, r5
+    11c8:	18bd80f0 	ldmneia	sp!, {r4, r5, r6, r7, pc}
+    11cc:	e5c2c022 	strb	ip, [r2, #34]
+    11d0:	e5903000 	ldr	r3, [r0]
+    11d4:	e5c31023 	strb	r1, [r3, #35]
+    11d8:	e5902004 	ldr	r2, [r0, #4]
+    11dc:	e5923000 	ldr	r3, [r2]
+    11e0:	e3530901 	cmp	r3, #16384	; 0x4000
+    11e4:	ba00001f 	blt	1268 <AT91F_DataFlashWriteBuffer+0xfc>
+    11e8:	e5903000 	ldr	r3, [r0]
+    11ec:	e5c31024 	strb	r1, [r3, #36]
+    11f0:	e5903004 	ldr	r3, [r0, #4]
+    11f4:	e593300c 	ldr	r3, [r3, #12]
+    11f8:	e5902000 	ldr	r2, [r0]
+    11fc:	e0043003 	and	r3, r4, r3
+    1200:	e1a03423 	mov	r3, r3, lsr #8
+    1204:	e5c23025 	strb	r3, [r2, #37]
+    1208:	e5903000 	ldr	r3, [r0]
+    120c:	e3a01005 	mov	r1, #5	; 0x5
+    1210:	e5c34026 	strb	r4, [r3, #38]
+    1214:	e5902000 	ldr	r2, [r0]
+    1218:	e2823022 	add	r3, r2, #34	; 0x22
+    121c:	e5823000 	str	r3, [r2]
+    1220:	e5903000 	ldr	r3, [r0]
+    1224:	e5831004 	str	r1, [r3, #4]
+    1228:	e5902000 	ldr	r2, [r0]
+    122c:	e2823022 	add	r3, r2, #34	; 0x22
+    1230:	e5823008 	str	r3, [r2, #8]
+    1234:	e5903000 	ldr	r3, [r0]
+    1238:	e583100c 	str	r1, [r3, #12]
+    123c:	e5903000 	ldr	r3, [r0]
+    1240:	e5836018 	str	r6, [r3, #24]
+    1244:	e5903000 	ldr	r3, [r0]
+    1248:	e5836010 	str	r6, [r3, #16]
+    124c:	e5903000 	ldr	r3, [r0]
+    1250:	e583701c 	str	r7, [r3, #28]
+    1254:	e5903000 	ldr	r3, [r0]
+    1258:	e5837014 	str	r7, [r3, #20]
+    125c:	e5900000 	ldr	r0, [r0]
+    1260:	e8bd40f0 	ldmia	sp!, {r4, r5, r6, r7, lr}
+    1264:	eafffec1 	b	d70 <AT91F_SpiWrite>
+    1268:	e592300c 	ldr	r3, [r2, #12]
+    126c:	e5902000 	ldr	r2, [r0]
+    1270:	e0043003 	and	r3, r4, r3
+    1274:	e1a03423 	mov	r3, r3, lsr #8
+    1278:	e5c23024 	strb	r3, [r2, #36]
+    127c:	e5903000 	ldr	r3, [r0]
+    1280:	e5c34025 	strb	r4, [r3, #37]
+    1284:	e5903000 	ldr	r3, [r0]
+    1288:	e5c31026 	strb	r1, [r3, #38]
+    128c:	e3a01004 	mov	r1, #4	; 0x4
+    1290:	eaffffdf 	b	1214 <AT91F_DataFlashWriteBuffer+0xa8>
+
+00001294 <AT91F_PageErase>:
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_PageErase                                        */
+/* Object              : Erase a page 						*/
+/* Input Parameters    : DataFlash Service					*/
+/*                     : Page concerned						*/
+/*                     : 							*/
+/* Return value		: State of the dataflash				*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_PageErase(
+	AT91PS_DataFlash pDataFlash,
+	unsigned int page)
+{
+    1294:	e52de004 	str	lr, [sp, -#4]!
+	int cmdsize;
+	/* Test if the buffer command is legal */
+	/* no data to transmit or receive */
+    	pDataFlash->pDataFlashDesc->tx_data_size = 0;
+    1298:	e5902000 	ldr	r2, [r0]
+    129c:	e3a03000 	mov	r3, #0	; 0x0
+    12a0:	e5823014 	str	r3, [r2, #20]
+
+	cmdsize = 4;
+	if (pDataFlash->pDevice->pages_number >= 16384)
+    12a4:	e5902004 	ldr	r2, [r0, #4]
+		cmdsize = 5;
+	return(AT91F_DataFlashSendCommand (pDataFlash, DB_PAGE_ERASE, cmdsize, page*pDataFlash->pDevice->pages_size));
+    12a8:	e5923004 	ldr	r3, [r2, #4]
+    12ac:	e0030391 	mul	r3, r1, r3
+    12b0:	e5922000 	ldr	r2, [r2]
+    12b4:	e3520901 	cmp	r2, #16384	; 0x4000
+    12b8:	b3a02004 	movlt	r2, #4	; 0x4
+    12bc:	a3a02005 	movge	r2, #5	; 0x5
+    12c0:	e3a01081 	mov	r1, #129	; 0x81
+    12c4:	e49de004 	ldr	lr, [sp], #4
+    12c8:	eafffee1 	b	e54 <AT91F_DataFlashSendCommand>
+
+000012cc <AT91F_BlockErase>:
+}
+
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_BlockErase                                       */
+/* Object              : Erase a Block 						*/
+/* Input Parameters    : DataFlash Service					*/
+/*                     : Page concerned						*/
+/*                     : 							*/
+/* Return value		: State of the dataflash				*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_BlockErase(
+	AT91PS_DataFlash pDataFlash,
+	unsigned int block)
+{
+    12cc:	e52de004 	str	lr, [sp, -#4]!
+	int cmdsize;
+	/* Test if the buffer command is legal */
+	/* no data to transmit or receive */
+    	pDataFlash->pDataFlashDesc->tx_data_size = 0;
+    12d0:	e5902000 	ldr	r2, [r0]
+    12d4:	e3a03000 	mov	r3, #0	; 0x0
+    12d8:	e5823014 	str	r3, [r2, #20]
+	cmdsize = 4;
+	if (pDataFlash->pDevice->pages_number >= 16384)
+    12dc:	e5902004 	ldr	r2, [r0, #4]
+		cmdsize = 5;
+	return(AT91F_DataFlashSendCommand (pDataFlash, DB_BLOCK_ERASE,cmdsize, block*8*pDataFlash->pDevice->pages_size));
+    12e0:	e5923004 	ldr	r3, [r2, #4]
+    12e4:	e0030391 	mul	r3, r1, r3
+    12e8:	e5922000 	ldr	r2, [r2]
+    12ec:	e3520901 	cmp	r2, #16384	; 0x4000
+    12f0:	b3a02004 	movlt	r2, #4	; 0x4
+    12f4:	a3a02005 	movge	r2, #5	; 0x5
+    12f8:	e1a03183 	mov	r3, r3, lsl #3
+    12fc:	e3a01050 	mov	r1, #80	; 0x50
+    1300:	e49de004 	ldr	lr, [sp], #4
+    1304:	eafffed2 	b	e54 <AT91F_DataFlashSendCommand>
+
+00001308 <AT91F_WriteBufferToMain>:
+}
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_WriteBufferToMain				*/
+/* Object              : Write buffer to the main memory			*/
+/* Input Parameters    : DataFlash Service					*/
+/*		: <BufferCommand> = command to send to buffer1 or buffer2	*/
+/*                     : <dest> = main memory address				*/
+/* Return value		: State of the dataflash				*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_WriteBufferToMain (
+	AT91PS_DataFlash pDataFlash,
+	unsigned char BufferCommand,
+	unsigned int dest )
+{
+    1308:	e201c0ff 	and	ip, r1, #255	; 0xff
+	int cmdsize;
+	/* Test if the buffer command is correct */
+	if ((BufferCommand != DB_BUF1_PAGE_PGM) &&
+    130c:	e35c0088 	cmp	ip, #136	; 0x88
+    1310:	135c0083 	cmpne	ip, #131	; 0x83
+    1314:	e92d4010 	stmdb	sp!, {r4, lr}
+    1318:	e1a0100c 	mov	r1, ip
+    131c:	e1a03002 	mov	r3, r2
+    1320:	e1a04000 	mov	r4, r0
+    1324:	0a000002 	beq	1334 <AT91F_WriteBufferToMain+0x2c>
+    1328:	e35c0089 	cmp	ip, #137	; 0x89
+    132c:	135c0086 	cmpne	ip, #134	; 0x86
+    1330:	1a000009 	bne	135c <AT91F_WriteBufferToMain+0x54>
+	    (BufferCommand != DB_BUF1_PAGE_ERASE_PGM) &&
+	    (BufferCommand != DB_BUF2_PAGE_PGM) &&
+	    (BufferCommand != DB_BUF2_PAGE_ERASE_PGM) )
+		return DATAFLASH_BAD_COMMAND;
+
+	/* no data to transmit or receive */
+	pDataFlash->pDataFlashDesc->tx_data_size = 0;
+    1334:	e594c000 	ldr	ip, [r4]
+    1338:	e3a02000 	mov	r2, #0	; 0x0
+    133c:	e58c2014 	str	r2, [ip, #20]
+
+	cmdsize = 4;
+	if (pDataFlash->pDevice->pages_number >= 16384)
+    1340:	e5942004 	ldr	r2, [r4, #4]
+    1344:	e5922000 	ldr	r2, [r2]
+    1348:	e3520901 	cmp	r2, #16384	; 0x4000
+    134c:	b3a02004 	movlt	r2, #4	; 0x4
+    1350:	a3a02005 	movge	r2, #5	; 0x5
+		cmdsize = 5;
+	/* Send the command to the dataflash */
+	return(AT91F_DataFlashSendCommand (pDataFlash, BufferCommand, cmdsize, dest));
+    1354:	e8bd4010 	ldmia	sp!, {r4, lr}
+    1358:	eafffebd 	b	e54 <AT91F_DataFlashSendCommand>
+}
+    135c:	e3a00004 	mov	r0, #4	; 0x4
+    1360:	e8bd8010 	ldmia	sp!, {r4, pc}
+
+00001364 <AT91F_PartialPageWrite>:
+
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_PartialPageWrite					*/
+/* Object              : Erase partielly a page					*/
+/* Input Parameters    : <page> = page number					*/
+/*			: <AdrInpage> = adr to begin the fading			*/
+/*                     : <length> = Number of bytes to erase			*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_PartialPageWrite (
+	AT91PS_DataFlash pDataFlash,
+	unsigned char *src,
+	unsigned int dest,
+	unsigned int size)
+{
+    1364:	e1a0c00d 	mov	ip, sp
+    1368:	e92ddef0 	stmdb	sp!, {r4, r5, r6, r7, r9, sl, fp, ip, lr, pc}
+    136c:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1370:	e24dd004 	sub	sp, sp, #4	; 0x4
+    1374:	e1a0a000 	mov	sl, r0
+	unsigned int page;
+	unsigned int AdrInPage;
+
+	page = dest / (pDataFlash->pDevice->pages_size);
+    1378:	e5900004 	ldr	r0, [r0, #4]
+    137c:	e5905004 	ldr	r5, [r0, #4]
+    1380:	e1a06001 	mov	r6, r1
+    1384:	e1a00002 	mov	r0, r2
+    1388:	e1a01005 	mov	r1, r5
+    138c:	e1a07003 	mov	r7, r3
+    1390:	e1a04002 	mov	r4, r2
+    1394:	eb00027c 	bl	1d8c <__udivsi3>
+	AdrInPage = dest % (pDataFlash->pDevice->pages_size);
+    1398:	e1a01005 	mov	r1, r5
+    139c:	e1a09000 	mov	r9, r0
+    13a0:	e1a00004 	mov	r0, r4
+    13a4:	eb00029e 	bl	1e24 <__umodsi3>
+
+	/* Read the contents of the page in the Sram Buffer */
+	AT91F_MainMemoryToBufferTransfert(pDataFlash, DB_PAGE_2_BUF1_TRF, page);
+	AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
+    13a8:	e59f5088 	ldr	r5, [pc, #136]	; 1438 <AT91F_PartialPageWrite+0xd4>
+    13ac:	e1a02009 	mov	r2, r9
+    13b0:	e1a04000 	mov	r4, r0
+    13b4:	e3a01053 	mov	r1, #83	; 0x53
+    13b8:	e1a0000a 	mov	r0, sl
+    13bc:	ebffff52 	bl	110c <AT91F_MainMemoryToBufferTransfert>
+    13c0:	e1a01005 	mov	r1, r5
+    13c4:	e59a0000 	ldr	r0, [sl]
+    13c8:	ebffff0d 	bl	1004 <AT91F_DataFlashWaitReady>
+	/*Update the SRAM buffer */
+	AT91F_DataFlashWriteBuffer(pDataFlash, DB_BUF1_WRITE, src, AdrInPage, size);
+    13cc:	e1a03004 	mov	r3, r4
+    13d0:	e1a02006 	mov	r2, r6
+    13d4:	e3a01084 	mov	r1, #132	; 0x84
+    13d8:	e1a0000a 	mov	r0, sl
+    13dc:	e58d7000 	str	r7, [sp]
+    13e0:	ebffff61 	bl	116c <AT91F_DataFlashWriteBuffer>
+
+	AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
+    13e4:	e1a01005 	mov	r1, r5
+    13e8:	e59a0000 	ldr	r0, [sl]
+    13ec:	ebffff04 	bl	1004 <AT91F_DataFlashWaitReady>
+
+	/* Erase page if a 128 Mbits device */
+	if (pDataFlash->pDevice->pages_number >= 16384) {
+    13f0:	e59a3004 	ldr	r3, [sl, #4]
+    13f4:	e5933000 	ldr	r3, [r3]
+    13f8:	e3530901 	cmp	r3, #16384	; 0x4000
+    13fc:	e1a01009 	mov	r1, r9
+    1400:	e1a0000a 	mov	r0, sl
+    1404:	aa000006 	bge	1424 <AT91F_PartialPageWrite+0xc0>
+		AT91F_PageErase(pDataFlash, page);
+		/* Rewrite the modified Sram Buffer in the main memory */
+		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
+	}
+
+	/* Rewrite the modified Sram Buffer in the main memory */
+	return(AT91F_WriteBufferToMain(pDataFlash, DB_BUF1_PAGE_ERASE_PGM, (page*pDataFlash->pDevice->pages_size)));
+    1408:	e59a3004 	ldr	r3, [sl, #4]
+    140c:	e5933004 	ldr	r3, [r3, #4]
+    1410:	e0020993 	mul	r2, r3, r9
+    1414:	e1a0000a 	mov	r0, sl
+    1418:	e3a01083 	mov	r1, #131	; 0x83
+    141c:	e91b6ef0 	ldmdb	fp, {r4, r5, r6, r7, r9, sl, fp, sp, lr}
+    1420:	eaffffb8 	b	1308 <AT91F_WriteBufferToMain>
+    1424:	ebffff9a 	bl	1294 <AT91F_PageErase>
+    1428:	e59a0000 	ldr	r0, [sl]
+    142c:	e1a01005 	mov	r1, r5
+    1430:	ebfffef3 	bl	1004 <AT91F_DataFlashWaitReady>
+    1434:	eafffff3 	b	1408 <AT91F_PartialPageWrite+0xa4>
+    1438:	00030d40 	andeq	r0, r3, r0, asr #26
+
+0000143c <AT91F_DataFlashWrite>:
+}
+
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_DataFlashWrite					*/
+/* Object              :							*/
+/* Input Parameters    : <*src> = Source buffer					*/
+/*                     : <dest> = dataflash adress				*/
+/*                     : <size> = data buffer size				*/
+/*------------------------------------------------------------------------------*/
+AT91S_DataFlashStatus AT91F_DataFlashWrite(
+	AT91PS_DataFlash pDataFlash,
+	unsigned char *src,
+	int dest,
+	int size )
+{
+    143c:	e1a0c00d 	mov	ip, sp
+    1440:	e92ddef0 	stmdb	sp!, {r4, r5, r6, r7, r9, sl, fp, ip, lr, pc}
+    1444:	e1a06000 	mov	r6, r0
+    1448:	e24cb004 	sub	fp, ip, #4	; 0x4
+    144c:	e24dd004 	sub	sp, sp, #4	; 0x4
+    1450:	e1a07002 	mov	r7, r2
+    1454:	e1a0a003 	mov	sl, r3
+    1458:	e1a09001 	mov	r9, r1
+	unsigned int length;
+	unsigned int page;
+	unsigned int status;
+
+	AT91F_SpiEnable();
+    145c:	ebfffe38 	bl	d44 <AT91F_SpiEnable>
+
+	if ( (dest + size) > (pDataFlash->pDevice->pages_size * (pDataFlash->pDevice->pages_number)))
+    1460:	e5963004 	ldr	r3, [r6, #4]
+    1464:	e8930014 	ldmia	r3, {r2, r4}
+    1468:	e0020294 	mul	r2, r4, r2
+    146c:	e087300a 	add	r3, r7, sl
+    1470:	e1530002 	cmp	r3, r2
+    1474:	c3a00003 	movgt	r0, #3	; 0x3
+		return DATAFLASH_MEMORY_OVERFLOW;
+
+	/* If destination does not fit a page start address */
+	if ((dest % ((unsigned int)(pDataFlash->pDevice->pages_size)))  != 0 ) {
+		length = pDataFlash->pDevice->pages_size - (dest % ((unsigned int)(pDataFlash->pDevice->pages_size)));
+
+		if (size < length)
+			length = size;
+
+		if(!AT91F_PartialPageWrite(pDataFlash,src, dest, length))
+			return DATAFLASH_ERROR;
+
+		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
+
+		/* Update size, source and destination pointers */
+		size -= length;
+		dest += length;
+		src += length;
+	}
+
+	while (( size - pDataFlash->pDevice->pages_size ) >= 0 ) {
+		/* program dataflash page */
+		page = (unsigned int)dest / (pDataFlash->pDevice->pages_size);
+
+		status = AT91F_DataFlashWriteBuffer(pDataFlash, DB_BUF1_WRITE, src, 0, pDataFlash->pDevice->pages_size);
+		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
+
+		status = AT91F_PageErase(pDataFlash, page);
+		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
+		if (!status)
+			return DATAFLASH_ERROR;
+
+		status = AT91F_WriteBufferToMain (pDataFlash, DB_BUF1_PAGE_PGM, dest);
+		if(!status)
+			return DATAFLASH_ERROR;
+
+		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
+
+		/* Update size, source and destination pointers */
+		size -= pDataFlash->pDevice->pages_size ;
+		dest += pDataFlash->pDevice->pages_size ;
+		src  += pDataFlash->pDevice->pages_size ;
+	}
+
+	/* If still some bytes to read */
+	if ( size > 0 ) {
+		/* program dataflash page */
+		if(!AT91F_PartialPageWrite(pDataFlash, src, dest, size) )
+			return DATAFLASH_ERROR;
+
+		AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY);
+	}
+	return DATAFLASH_OK;
+}
+    1478:	c91baef0 	ldmgtdb	fp, {r4, r5, r6, r7, r9, sl, fp, sp, pc}
+    147c:	e1a00007 	mov	r0, r7
+    1480:	e1a01004 	mov	r1, r4
+    1484:	eb000266 	bl	1e24 <__umodsi3>
+    1488:	e3500000 	cmp	r0, #0	; 0x0
+    148c:	1a00003d 	bne	1588 <AT91F_DataFlashWrite+0x14c>
+    1490:	e5961004 	ldr	r1, [r6, #4]
+    1494:	e5913004 	ldr	r3, [r1, #4]
+    1498:	e063300a 	rsb	r3, r3, sl
+    149c:	e3530000 	cmp	r3, #0	; 0x0
+    14a0:	ba000028 	blt	1548 <AT91F_DataFlashWrite+0x10c>
+    14a4:	e5914004 	ldr	r4, [r1, #4]
+    14a8:	e1a00007 	mov	r0, r7
+    14ac:	e1a01004 	mov	r1, r4
+    14b0:	eb000235 	bl	1d8c <__udivsi3>
+    14b4:	e1a02009 	mov	r2, r9
+    14b8:	e3a03000 	mov	r3, #0	; 0x0
+    14bc:	e1a05000 	mov	r5, r0
+    14c0:	e3a01084 	mov	r1, #132	; 0x84
+    14c4:	e1a00006 	mov	r0, r6
+    14c8:	e58d4000 	str	r4, [sp]
+    14cc:	ebffff26 	bl	116c <AT91F_DataFlashWriteBuffer>
+    14d0:	e59f10f4 	ldr	r1, [pc, #244]	; 15cc <AT91F_DataFlashWrite+0x190>
+    14d4:	e5960000 	ldr	r0, [r6]
+    14d8:	ebfffec9 	bl	1004 <AT91F_DataFlashWaitReady>
+    14dc:	e1a01005 	mov	r1, r5
+    14e0:	e1a00006 	mov	r0, r6
+    14e4:	ebffff6a 	bl	1294 <AT91F_PageErase>
+    14e8:	e59f10dc 	ldr	r1, [pc, #220]	; 15cc <AT91F_DataFlashWrite+0x190>
+    14ec:	e1a04000 	mov	r4, r0
+    14f0:	e5960000 	ldr	r0, [r6]
+    14f4:	ebfffec2 	bl	1004 <AT91F_DataFlashWaitReady>
+    14f8:	e3540000 	cmp	r4, #0	; 0x0
+    14fc:	e1a02007 	mov	r2, r7
+    1500:	e3a01088 	mov	r1, #136	; 0x88
+    1504:	e1a00006 	mov	r0, r6
+    1508:	0a000017 	beq	156c <AT91F_DataFlashWrite+0x130>
+    150c:	ebffff7d 	bl	1308 <AT91F_WriteBufferToMain>
+    1510:	e3500000 	cmp	r0, #0	; 0x0
+    1514:	e1a04000 	mov	r4, r0
+    1518:	e59f10ac 	ldr	r1, [pc, #172]	; 15cc <AT91F_DataFlashWrite+0x190>
+    151c:	0a000012 	beq	156c <AT91F_DataFlashWrite+0x130>
+    1520:	e5960000 	ldr	r0, [r6]
+    1524:	ebfffeb6 	bl	1004 <AT91F_DataFlashWaitReady>
+    1528:	e5961004 	ldr	r1, [r6, #4]
+    152c:	e5912004 	ldr	r2, [r1, #4]
+    1530:	e062a00a 	rsb	sl, r2, sl
+    1534:	e062300a 	rsb	r3, r2, sl
+    1538:	e3530000 	cmp	r3, #0	; 0x0
+    153c:	e0877002 	add	r7, r7, r2
+    1540:	e0899002 	add	r9, r9, r2
+    1544:	aaffffd6 	bge	14a4 <AT91F_DataFlashWrite+0x68>
+    1548:	e35a0000 	cmp	sl, #0	; 0x0
+    154c:	da00000b 	ble	1580 <AT91F_DataFlashWrite+0x144>
+    1550:	e1a01009 	mov	r1, r9
+    1554:	e1a02007 	mov	r2, r7
+    1558:	e1a0300a 	mov	r3, sl
+    155c:	e1a00006 	mov	r0, r6
+    1560:	ebffff7f 	bl	1364 <AT91F_PartialPageWrite>
+    1564:	e3500000 	cmp	r0, #0	; 0x0
+    1568:	1a000001 	bne	1574 <AT91F_DataFlashWrite+0x138>
+    156c:	e3a00002 	mov	r0, #2	; 0x2
+    1570:	e91baef0 	ldmdb	fp, {r4, r5, r6, r7, r9, sl, fp, sp, pc}
+    1574:	e5960000 	ldr	r0, [r6]
+    1578:	e59f104c 	ldr	r1, [pc, #76]	; 15cc <AT91F_DataFlashWrite+0x190>
+    157c:	ebfffea0 	bl	1004 <AT91F_DataFlashWaitReady>
+    1580:	e3a00001 	mov	r0, #1	; 0x1
+    1584:	e91baef0 	ldmdb	fp, {r4, r5, r6, r7, r9, sl, fp, sp, pc}
+    1588:	e0604004 	rsb	r4, r0, r4
+    158c:	e154000a 	cmp	r4, sl
+    1590:	21a0400a 	movcs	r4, sl
+    1594:	e1a00006 	mov	r0, r6
+    1598:	e1a01009 	mov	r1, r9
+    159c:	e1a02007 	mov	r2, r7
+    15a0:	e1a03004 	mov	r3, r4
+    15a4:	ebffff6e 	bl	1364 <AT91F_PartialPageWrite>
+    15a8:	e3500000 	cmp	r0, #0	; 0x0
+    15ac:	0affffee 	beq	156c <AT91F_DataFlashWrite+0x130>
+    15b0:	e5960000 	ldr	r0, [r6]
+    15b4:	e59f1010 	ldr	r1, [pc, #16]	; 15cc <AT91F_DataFlashWrite+0x190>
+    15b8:	ebfffe91 	bl	1004 <AT91F_DataFlashWaitReady>
+    15bc:	e0899004 	add	r9, r9, r4
+    15c0:	e064a00a 	rsb	sl, r4, sl
+    15c4:	e0877004 	add	r7, r7, r4
+    15c8:	eaffffb0 	b	1490 <AT91F_DataFlashWrite+0x54>
+    15cc:	00030d40 	andeq	r0, r3, r0, asr #26
+
+000015d0 <AT91F_DataFlashRead>:
+
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_DataFlashRead 					*/
+/* Object              : Read a block in dataflash				*/
+/* Input Parameters    : 							*/
+/* Return value		: 							*/
+/*------------------------------------------------------------------------------*/
+int AT91F_DataFlashRead(
+	AT91PS_DataFlash pDataFlash,
+	unsigned long addr,
+	unsigned long size,
+	char *buffer)
+{
+    15d0:	e1a0c00d 	mov	ip, sp
+    15d4:	e92ddcf0 	stmdb	sp!, {r4, r5, r6, r7, sl, fp, ip, lr, pc}
+    15d8:	e24cb004 	sub	fp, ip, #4	; 0x4
+    15dc:	e1a07000 	mov	r7, r0
+    15e0:	e1a0a001 	mov	sl, r1
+    15e4:	e1a05002 	mov	r5, r2
+    15e8:	e1a06003 	mov	r6, r3
+	unsigned long SizeToRead;
+
+	AT91F_SpiEnable();
+    15ec:	ebfffdd4 	bl	d44 <AT91F_SpiEnable>
+
+	if(AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY) != DATAFLASH_OK)
+    15f0:	e5970000 	ldr	r0, [r7]
+    15f4:	e59f1074 	ldr	r1, [pc, #116]	; 1670 <AT91F_DataFlashRead+0xa0>
+    15f8:	ebfffe81 	bl	1004 <AT91F_DataFlashWaitReady>
+    15fc:	e3500001 	cmp	r0, #1	; 0x1
+    1600:	0a000001 	beq	160c <AT91F_DataFlashRead+0x3c>
+		return -1;
+
+	while (size) {
+		SizeToRead = (size < 0x8000)? size:0x8000;
+
+		if (AT91F_DataFlashWaitReady(pDataFlash->pDataFlashDesc, AT91C_TIMEOUT_WRDY) != DATAFLASH_OK)
+			return -1;
+
+		if (AT91F_DataFlashContinuousRead (pDataFlash, addr, buffer, SizeToRead) != DATAFLASH_OK)
+			return -1;
+    1604:	e3e00000 	mvn	r0, #0	; 0x0
+
+		size -= SizeToRead;
+		addr += SizeToRead;
+		buffer += SizeToRead;
+	}
+
+	return DATAFLASH_OK;
+}
+    1608:	e91bacf0 	ldmdb	fp, {r4, r5, r6, r7, sl, fp, sp, pc}
+    160c:	e3550000 	cmp	r5, #0	; 0x0
+    1610:	1a000001 	bne	161c <AT91F_DataFlashRead+0x4c>
+    1614:	e3a00001 	mov	r0, #1	; 0x1
+    1618:	e91bacf0 	ldmdb	fp, {r4, r5, r6, r7, sl, fp, sp, pc}
+    161c:	e59f104c 	ldr	r1, [pc, #76]	; 1670 <AT91F_DataFlashRead+0xa0>
+    1620:	e5970000 	ldr	r0, [r7]
+    1624:	ebfffe76 	bl	1004 <AT91F_DataFlashWaitReady>
+    1628:	e1a0c000 	mov	ip, r0
+    162c:	e3550902 	cmp	r5, #32768	; 0x8000
+    1630:	31a04005 	movcc	r4, r5
+    1634:	23a04902 	movcs	r4, #32768	; 0x8000
+    1638:	e35c0001 	cmp	ip, #1	; 0x1
+    163c:	e1a0100a 	mov	r1, sl
+    1640:	e1a02006 	mov	r2, r6
+    1644:	e1a00007 	mov	r0, r7
+    1648:	e1a03004 	mov	r3, r4
+    164c:	e08aa004 	add	sl, sl, r4
+    1650:	e0866004 	add	r6, r6, r4
+    1654:	1affffea 	bne	1604 <AT91F_DataFlashRead+0x34>
+    1658:	ebfffe7d 	bl	1054 <AT91F_DataFlashContinuousRead>
+    165c:	e3500001 	cmp	r0, #1	; 0x1
+    1660:	1affffe7 	bne	1604 <AT91F_DataFlashRead+0x34>
+    1664:	e0555004 	subs	r5, r5, r4
+    1668:	1affffeb 	bne	161c <AT91F_DataFlashRead+0x4c>
+    166c:	eaffffe8 	b	1614 <AT91F_DataFlashRead+0x44>
+    1670:	00030d40 	andeq	r0, r3, r0, asr #26
+
+00001674 <AT91F_DataflashProbe>:
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_DataflashProbe 					*/
+/* Object              : 							*/
+/* Input Parameters    : 							*/
+/* Return value	       : Dataflash status register				*/
+/*------------------------------------------------------------------------------*/
+int AT91F_DataflashProbe(int cs, AT91PS_DataflashDesc pDesc)
+{
+    1674:	e1a0c00d 	mov	ip, sp
+    1678:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    167c:	e1a04001 	mov	r4, r1
+    1680:	e24cb004 	sub	fp, ip, #4	; 0x4
+	AT91F_SpiEnable();
+    1684:	ebfffdae 	bl	d44 <AT91F_SpiEnable>
+	AT91F_DataFlashGetStatus(pDesc);
+    1688:	e1a00004 	mov	r0, r4
+    168c:	ebfffe3f 	bl	f90 <AT91F_DataFlashGetStatus>
+	return((pDesc->command[1] == 0xFF)? 0: pDesc->command[1] & 0x3C);
+    1690:	e5d43023 	ldrb	r3, [r4, #35]
+    1694:	e35300ff 	cmp	r3, #255	; 0xff
+    1698:	e203003c 	and	r0, r3, #60	; 0x3c
+    169c:	03a00000 	moveq	r0, #0	; 0x0
+}
+    16a0:	e91ba810 	ldmdb	fp, {r4, fp, sp, pc}
+
+000016a4 <AT91F_DataflashInit>:
+
+int AT91F_DataflashInit (void)
+{
+    16a4:	e1a0c00d 	mov	ip, sp
+    16a8:	e92dd830 	stmdb	sp!, {r4, r5, fp, ip, lr, pc}
+  int dfcode;
+  AT91F_SpiInit();
+  dataflash_info.Desc.state = IDLE;
+    16ac:	e59f40cc 	ldr	r4, [pc, #204]	; 1780 <AT91F_DataflashInit+0xdc>
+    16b0:	e24cb004 	sub	fp, ip, #4	; 0x4
+    16b4:	ebfffd8c 	bl	cec <AT91F_SpiInit>
+    16b8:	e3a05000 	mov	r5, #0	; 0x0
+  dataflash_info.id = 0;
+  dataflash_info.Device.pages_number = 0;
+  dfcode = AT91F_DataflashProbe (0x0E, &dataflash_info.Desc);
+    16bc:	e3a0000e 	mov	r0, #14	; 0xe
+    16c0:	e1a01004 	mov	r1, r4
+    16c4:	e5c45020 	strb	r5, [r4, #32]
+    16c8:	e5845074 	str	r5, [r4, #116]
+    16cc:	e584502c 	str	r5, [r4, #44]
+    16d0:	ebffffe7 	bl	1674 <AT91F_DataflashProbe>
+  if(!dfcode)
+    16d4:	e1500005 	cmp	r0, r5
+    16d8:	091ba830 	ldmeqdb	fp, {r4, r5, fp, sp, pc}
+    return 0;
+  dataflash_info.Device.cs = 0x0E;
+    16dc:	e3a0300e 	mov	r3, #14	; 0xe
+  dataflash_info.Desc.DataFlash_state = IDLE;
+  dataflash_info.logical_address = 0;
+  dataflash_info.id = dfcode;
+  switch (dfcode) {
+    16e0:	e350002c 	cmp	r0, #44	; 0x2c
+    16e4:	e584303c 	str	r3, [r4, #60]
+    16e8:	e5845070 	str	r5, [r4, #112]
+    16ec:	e5c45021 	strb	r5, [r4, #33]
+    16f0:	e5840074 	str	r0, [r4, #116]
+    16f4:	0a00001d 	beq	1770 <AT91F_DataflashInit+0xcc>
+    16f8:	ca00000c 	bgt	1730 <AT91F_DataflashInit+0x8c>
+    16fc:	e3500010 	cmp	r0, #16	; 0x10
+    1700:	0a000001 	beq	170c <AT91F_DataflashInit+0x68>
+  case AT45DB161:
+    dataflash_info.Device.pages_number = 4096;
+    dataflash_info.Device.pages_size = 528;
+    dataflash_info.Device.page_offset = 10;
+    dataflash_info.Device.byte_mask = 0x300;
+    break;
+  case AT45DB321:
+    dataflash_info.Device.pages_number = 8192;
+    dataflash_info.Device.pages_size = 528;
+    dataflash_info.Device.page_offset = 10;
+    dataflash_info.Device.byte_mask = 0x300;
+    break;
+  case AT45DB642:
+    dataflash_info.Device.pages_number = 8192;
+    dataflash_info.Device.pages_size = 1056;
+    dataflash_info.Device.page_offset = 11;
+    dataflash_info.Device.byte_mask = 0x700;
+    break;
+  case AT45DB128:
+    dataflash_info.Device.pages_number = 16384;
+    dataflash_info.Device.pages_size = 1056;
+    dataflash_info.Device.page_offset = 11;
+    dataflash_info.Device.byte_mask = 0x700;
+    break;
+  default:
+    break;
+  }
+  return (1);
+    1704:	e3a00001 	mov	r0, #1	; 0x1
+}
+    1708:	e91ba830 	ldmdb	fp, {r4, r5, fp, sp, pc}
+    170c:	e3a03c07 	mov	r3, #1792	; 0x700
+    1710:	e5843038 	str	r3, [r4, #56]
+    1714:	e2833c39 	add	r3, r3, #14592	; 0x3900
+    1718:	e584302c 	str	r3, [r4, #44]
+    171c:	e3a03e42 	mov	r3, #1056	; 0x420
+    1720:	e5843030 	str	r3, [r4, #48]
+    1724:	e3a0300b 	mov	r3, #11	; 0xb
+    1728:	e5843034 	str	r3, [r4, #52]
+    172c:	eafffff4 	b	1704 <AT91F_DataflashInit+0x60>
+    1730:	e3500034 	cmp	r0, #52	; 0x34
+    1734:	0a000005 	beq	1750 <AT91F_DataflashInit+0xac>
+    1738:	e350003c 	cmp	r0, #60	; 0x3c
+    173c:	1afffff0 	bne	1704 <AT91F_DataflashInit+0x60>
+    1740:	e3a03c07 	mov	r3, #1792	; 0x700
+    1744:	e5843038 	str	r3, [r4, #56]
+    1748:	e2833c19 	add	r3, r3, #6400	; 0x1900
+    174c:	eafffff1 	b	1718 <AT91F_DataflashInit+0x74>
+    1750:	e3a03c03 	mov	r3, #768	; 0x300
+    1754:	e5843038 	str	r3, [r4, #56]
+    1758:	e2833c1d 	add	r3, r3, #7424	; 0x1d00
+    175c:	e584302c 	str	r3, [r4, #44]
+    1760:	e3a03e21 	mov	r3, #528	; 0x210
+    1764:	e5843030 	str	r3, [r4, #48]
+    1768:	e3a0300a 	mov	r3, #10	; 0xa
+    176c:	eaffffed 	b	1728 <AT91F_DataflashInit+0x84>
+    1770:	e3a03c03 	mov	r3, #768	; 0x300
+    1774:	e5843038 	str	r3, [r4, #56]
+    1778:	e2833c0d 	add	r3, r3, #3328	; 0xd00
+    177c:	eafffff6 	b	175c <AT91F_DataflashInit+0xb8>
+    1780:	00002558 	andeq	r2, r0, r8, asr r5
+
+00001784 <dataflash_print_info>:
+
+
+void dataflash_print_info (void)
+{
+    1784:	e1a0c00d 	mov	ip, sp
+    1788:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+  if (dataflash_info.id != 0)
+    178c:	e59f4064 	ldr	r4, [pc, #100]	; 17f8 <dataflash_print_info+0x74>
+    1790:	e5943074 	ldr	r3, [r4, #116]
+    1794:	e3530000 	cmp	r3, #0	; 0x0
+    1798:	e24cb004 	sub	fp, ip, #4	; 0x4
+    179c:	1a000012 	bne	17ec <dataflash_print_info+0x68>
+    puts ("DataFlash:");
+  switch (dataflash_info.id) {
+    17a0:	e5943074 	ldr	r3, [r4, #116]
+    17a4:	e353002c 	cmp	r3, #44	; 0x2c
+    17a8:	0a00000d 	beq	17e4 <dataflash_print_info+0x60>
+    17ac:	8a000004 	bhi	17c4 <dataflash_print_info+0x40>
+    17b0:	e3530010 	cmp	r3, #16	; 0x10
+  case AT45DB161:
+    puts ("AT45DB161\n");
+    break;
+  case AT45DB321:
+    puts ("AT45DB321\n");
+    break; 
+  case AT45DB642:
+    puts ("AT45DB642\n");
+    break;
+  case AT45DB128:
+    puts ("AT45DB128\n");
+    break;
+  }
+}
+    17b4:	191ba810 	ldmnedb	fp, {r4, fp, sp, pc}
+    17b8:	e59f003c 	ldr	r0, [pc, #60]	; 17fc <dataflash_print_info+0x78>
+    17bc:	e91b6810 	ldmdb	fp, {r4, fp, sp, lr}
+    17c0:	eafffcd2 	b	b10 <puts>
+    17c4:	e3530034 	cmp	r3, #52	; 0x34
+    17c8:	0a000003 	beq	17dc <dataflash_print_info+0x58>
+    17cc:	e353003c 	cmp	r3, #60	; 0x3c
+    17d0:	191ba810 	ldmnedb	fp, {r4, fp, sp, pc}
+    17d4:	e59f0024 	ldr	r0, [pc, #36]	; 1800 <dataflash_print_info+0x7c>
+    17d8:	eafffff7 	b	17bc <dataflash_print_info+0x38>
+    17dc:	e59f0020 	ldr	r0, [pc, #32]	; 1804 <dataflash_print_info+0x80>
+    17e0:	eafffff5 	b	17bc <dataflash_print_info+0x38>
+    17e4:	e59f001c 	ldr	r0, [pc, #28]	; 1808 <dataflash_print_info+0x84>
+    17e8:	eafffff3 	b	17bc <dataflash_print_info+0x38>
+    17ec:	e59f0018 	ldr	r0, [pc, #24]	; 180c <dataflash_print_info+0x88>
+    17f0:	ebfffcc6 	bl	b10 <puts>
+    17f4:	eaffffe9 	b	17a0 <dataflash_print_info+0x1c>
+    17f8:	00002558 	andeq	r2, r0, r8, asr r5
+    17fc:	000023d4 	ldreqd	r2, [r0], -r4
+    1800:	000023e0 	andeq	r2, r0, r0, ror #7
+    1804:	000023ec 	andeq	r2, r0, ip, ror #7
+    1808:	000023f8 	streqd	r2, [r0], -r8
+    180c:	00002404 	andeq	r2, r0, r4, lsl #8
+
+00001810 <AT91F_DataflashSelect>:
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : AT91F_DataflashSelect 					*/
+/* Object              : Select the correct device				*/
+/*------------------------------------------------------------------------------*/
+AT91PS_DataFlash AT91F_DataflashSelect (AT91PS_DataFlash pFlash, unsigned int *addr)
+{
+	pFlash->pDataFlashDesc = &(dataflash_info.Desc);
+    1810:	e59f1008 	ldr	r1, [pc, #8]	; 1820 <AT91F_DataflashSelect+0x10>
+	pFlash->pDevice = &(dataflash_info.Device);
+    1814:	e281202c 	add	r2, r1, #44	; 0x2c
+    1818:	e8800006 	stmia	r0, {r1, r2}
+    181c:	e1a0f00e 	mov	pc, lr
+    1820:	00002558 	andeq	r2, r0, r8, asr r5
+
+00001824 <addr_dataflash>:
+	return (pFlash);
+}
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : addr_dataflash 					*/
+/* Object              : Test if address is valid				*/
+/*------------------------------------------------------------------------------*/
+int addr_dataflash (unsigned long addr)
+{
+	int addr_valid = 0;
+    1824:	e3a0c000 	mov	ip, #0	; 0x0
+	int i;
+
+	for (i = 0; i < CFG_MAX_DATAFLASH_BANKS; i++) {
+    1828:	e1a0100c 	mov	r1, ip
+		if ((((int) addr) & 0xFF000000) ==
+    182c:	e59f3024 	ldr	r3, [pc, #36]	; 1858 <addr_dataflash+0x34>
+    1830:	e5932070 	ldr	r2, [r3, #112]
+    1834:	e20034ff 	and	r3, r0, #-16777216	; 0xff000000
+    1838:	e1530002 	cmp	r3, r2
+    183c:	e2811001 	add	r1, r1, #1	; 0x1
+    1840:	03a0c001 	moveq	ip, #1	; 0x1
+			dataflash_info.logical_address) {
+			addr_valid = 1;
+			break;
+    1844:	0a000001 	beq	1850 <addr_dataflash+0x2c>
+    1848:	e3510001 	cmp	r1, #1	; 0x1
+    184c:	dafffff6 	ble	182c <addr_dataflash+0x8>
+		}
+	}
+
+	return addr_valid;
+}
+    1850:	e1a0000c 	mov	r0, ip
+    1854:	e1a0f00e 	mov	pc, lr
+    1858:	00002558 	andeq	r2, r0, r8, asr r5
+
+0000185c <size_dataflash>:
+/*-----------------------------------------------------------------------------*/
+/* Function Name       : size_dataflash 					*/
+/* Object              : Test if address is valid regarding the size		*/
+/*-----------------------------------------------------------------------------*/
+int size_dataflash (AT91PS_DataFlash pdataFlash, unsigned long addr, unsigned long size)
+{
+	/* is outside the dataflash */
+	if (((int)addr & 0x0FFFFFFF) > (pdataFlash->pDevice->pages_size *
+    185c:	e5903004 	ldr	r3, [r0, #4]
+    1860:	e8930009 	ldmia	r3, {r0, r3}
+    1864:	e0030390 	mul	r3, r0, r3
+    1868:	e3c1120f 	bic	r1, r1, #-268435456	; 0xf0000000
+    186c:	e1510003 	cmp	r1, r3
+    1870:	e061c003 	rsb	ip, r1, r3
+    1874:	e3a00000 	mov	r0, #0	; 0x0
+    1878:	c1a0f00e 	movgt	pc, lr
+		pdataFlash->pDevice->pages_number)) return 0;
+	/* is too large for the dataflash */
+	if (size > ((pdataFlash->pDevice->pages_size *
+    187c:	e152000c 	cmp	r2, ip
+    1880:	83a00000 	movhi	r0, #0	; 0x0
+    1884:	93a00001 	movls	r0, #1	; 0x1
+		pdataFlash->pDevice->pages_number) - ((int)addr & 0x0FFFFFFF))) return 0;
+
+	return 1;
+}
+    1888:	e1a0f00e 	mov	pc, lr
+
+0000188c <read_dataflash>:
+
+/*------------------------------------------------------------------------------*/
+/* Function Name       : read_dataflash 					*/
+/* Object              : dataflash memory read					*/
+/*------------------------------------------------------------------------------*/
+int read_dataflash (unsigned long addr, unsigned long size, char *result)
+{
+    188c:	e1a0c00d 	mov	ip, sp
+    1890:	e92dd8f0 	stmdb	sp!, {r4, r5, r6, r7, fp, ip, lr, pc}
+    1894:	e24cb004 	sub	fp, ip, #4	; 0x4
+	int AddrToRead = addr;
+    1898:	e24b301c 	sub	r3, fp, #28	; 0x1c
+    189c:	e24dd004 	sub	sp, sp, #4	; 0x4
+	AT91PS_DataFlash pFlash = &DataFlashInst;
+    18a0:	e59f5068 	ldr	r5, [pc, #104]	; 1910 <read_dataflash+0x84>
+    18a4:	e5230004 	str	r0, [r3, -#4]!
+    18a8:	e1a04000 	mov	r4, r0
+    18ac:	e1a06001 	mov	r6, r1
+
+	pFlash = AT91F_DataflashSelect (pFlash, &AddrToRead);
+    18b0:	e1a00005 	mov	r0, r5
+    18b4:	e1a01003 	mov	r1, r3
+    18b8:	e1a07002 	mov	r7, r2
+    18bc:	ebffffd3 	bl	1810 <AT91F_DataflashSelect>
+
+	if (pFlash == 0)
+    18c0:	e3500000 	cmp	r0, #0	; 0x0
+    18c4:	e1a05000 	mov	r5, r0
+    18c8:	e1a01004 	mov	r1, r4
+    18cc:	e1a02006 	mov	r2, r6
+    18d0:	e3a0c040 	mov	ip, #64	; 0x40
+    18d4:	0a000007 	beq	18f8 <read_dataflash+0x6c>
+		return ERR_UNKNOWN_FLASH_TYPE;
+
+	if (size_dataflash(pFlash,addr,size) == 0)
+    18d8:	ebffffdf 	bl	185c <size_dataflash>
+    18dc:	e1a01000 	mov	r1, r0
+    18e0:	e3510000 	cmp	r1, #0	; 0x0
+    18e4:	e3a0c008 	mov	ip, #8	; 0x8
+    18e8:	e1a03007 	mov	r3, r7
+    18ec:	e1a00005 	mov	r0, r5
+    18f0:	e1a02006 	mov	r2, r6
+    18f4:	1a000001 	bne	1900 <read_dataflash+0x74>
+		return ERR_INVAL;
+
+	return (AT91F_DataFlashRead (pFlash, AddrToRead, size, result));
+}
+    18f8:	e1a0000c 	mov	r0, ip
+    18fc:	e91ba8f0 	ldmdb	fp, {r4, r5, r6, r7, fp, sp, pc}
+    1900:	e51b1020 	ldr	r1, [fp, -#32]
+    1904:	ebffff31 	bl	15d0 <AT91F_DataFlashRead>
+    1908:	e1a0c000 	mov	ip, r0
+    190c:	eafffff9 	b	18f8 <read_dataflash+0x6c>
+    1910:	000025d0 	ldreqd	r2, [r0], -r0
+
+00001914 <write_dataflash>:
+
+
+/*-----------------------------------------------------------------------------*/
+/* Function Name       : write_dataflash 				       */
+/* Object              : write a block in dataflash			       */
+/*-----------------------------------------------------------------------------*/
+int write_dataflash (unsigned long addr_dest, unsigned long addr_src,
+		     unsigned long size)
+{
+    1914:	e1a0c00d 	mov	ip, sp
+    1918:	e92dd8f0 	stmdb	sp!, {r4, r5, r6, r7, fp, ip, lr, pc}
+    191c:	e24cb004 	sub	fp, ip, #4	; 0x4
+	int AddrToWrite = addr_dest;
+    1920:	e24b301c 	sub	r3, fp, #28	; 0x1c
+    1924:	e24dd004 	sub	sp, sp, #4	; 0x4
+	AT91PS_DataFlash pFlash = &DataFlashInst;
+    1928:	e59f5070 	ldr	r5, [pc, #112]	; 19a0 <write_dataflash+0x8c>
+    192c:	e5230004 	str	r0, [r3, -#4]!
+    1930:	e1a04000 	mov	r4, r0
+    1934:	e1a07001 	mov	r7, r1
+
+	pFlash = AT91F_DataflashSelect (pFlash, &AddrToWrite);
+    1938:	e1a00005 	mov	r0, r5
+    193c:	e1a01003 	mov	r1, r3
+    1940:	e1a06002 	mov	r6, r2
+    1944:	ebffffb1 	bl	1810 <AT91F_DataflashSelect>
+
+	if (pFlash == 0)
+    1948:	e3500000 	cmp	r0, #0	; 0x0
+    194c:	e1a05000 	mov	r5, r0
+    1950:	e1a01004 	mov	r1, r4
+    1954:	e1a02006 	mov	r2, r6
+    1958:	e3a0e040 	mov	lr, #64	; 0x40
+    195c:	0a00000d 	beq	1998 <write_dataflash+0x84>
+		return ERR_UNKNOWN_FLASH_TYPE;
+
+	if (size_dataflash(pFlash,addr_dest,size) == 0)
+    1960:	ebffffbd 	bl	185c <size_dataflash>
+    1964:	e3500000 	cmp	r0, #0	; 0x0
+    1968:	e3a0e008 	mov	lr, #8	; 0x8
+    196c:	0a000009 	beq	1998 <write_dataflash+0x84>
+		return ERR_INVAL;
+
+	if (AddrToWrite == -1)
+    1970:	e51bc020 	ldr	ip, [fp, -#32]
+    1974:	e37c0001 	cmn	ip, #1	; 0x1
+    1978:	e1a00005 	mov	r0, r5
+    197c:	e1a0e00c 	mov	lr, ip
+    1980:	e1a01007 	mov	r1, r7
+    1984:	e1a03006 	mov	r3, r6
+    1988:	e1a0200c 	mov	r2, ip
+    198c:	0a000001 	beq	1998 <write_dataflash+0x84>
+		return -1;
+
+	return AT91F_DataFlashWrite (pFlash, (char *) addr_src, AddrToWrite, size);
+    1990:	ebfffea9 	bl	143c <AT91F_DataFlashWrite>
+    1994:	e1a0e000 	mov	lr, r0
+}
+    1998:	e1a0000e 	mov	r0, lr
+    199c:	e91ba8f0 	ldmdb	fp, {r4, r5, r6, r7, fp, sp, pc}
+    19a0:	000025d0 	ldreqd	r2, [r0], -r0
+
+000019a4 <dataflash_perror>:
+
+void dataflash_perror (int err)
+{
+	switch (err) {
+    19a4:	e3500004 	cmp	r0, #4	; 0x4
+    19a8:	e52de004 	str	lr, [sp, -#4]!
+    19ac:	0a000014 	beq	1a04 <dataflash_perror+0x60>
+    19b0:	ca000006 	bgt	19d0 <dataflash_perror+0x2c>
+    19b4:	e3500000 	cmp	r0, #0	; 0x0
+    19b8:	049df004 	ldreq	pc, [sp], #4
+    19bc:	e3500001 	cmp	r0, #1	; 0x1
+	case ERR_OK:
+		break;
+	case ERR_TIMOUT:
+		puts ("Timeout writing to DataFlash\n");
+		break;
+	case ERR_PROTECTED:
+		puts ("Can't write to protected DataFlash sectors\n");
+		break;
+	case ERR_INVAL:
+		puts ("Outside available DataFlash\n");
+		break;
+	case ERR_UNKNOWN_FLASH_TYPE:
+		puts ("Unknown Type of DataFlash\n");
+		break;
+	case ERR_PROG_ERROR:
+		puts ("General DataFlash Programming Error\n");
+		break;
+	}
+}
+    19c0:	149df004 	ldrne	pc, [sp], #4
+    19c4:	e59f0040 	ldr	r0, [pc, #64]	; 1a0c <dataflash_perror+0x68>
+    19c8:	e49de004 	ldr	lr, [sp], #4
+    19cc:	eafffc4f 	b	b10 <puts>
+    19d0:	e3500040 	cmp	r0, #64	; 0x40
+    19d4:	0a000008 	beq	19fc <dataflash_perror+0x58>
+    19d8:	ca000003 	bgt	19ec <dataflash_perror+0x48>
+    19dc:	e3500008 	cmp	r0, #8	; 0x8
+    19e0:	149df004 	ldrne	pc, [sp], #4
+    19e4:	e59f0024 	ldr	r0, [pc, #36]	; 1a10 <dataflash_perror+0x6c>
+    19e8:	eafffff6 	b	19c8 <dataflash_perror+0x24>
+    19ec:	e3500080 	cmp	r0, #128	; 0x80
+    19f0:	149df004 	ldrne	pc, [sp], #4
+    19f4:	e59f0018 	ldr	r0, [pc, #24]	; 1a14 <dataflash_perror+0x70>
+    19f8:	eafffff2 	b	19c8 <dataflash_perror+0x24>
+    19fc:	e59f0014 	ldr	r0, [pc, #20]	; 1a18 <dataflash_perror+0x74>
+    1a00:	eafffff0 	b	19c8 <dataflash_perror+0x24>
+    1a04:	e59f0010 	ldr	r0, [pc, #16]	; 1a1c <dataflash_perror+0x78>
+    1a08:	eaffffee 	b	19c8 <dataflash_perror+0x24>
+    1a0c:	00002410 	andeq	r2, r0, r0, lsl r4
+    1a10:	00002430 	andeq	r2, r0, r0, lsr r4
+    1a14:	00002450 	andeq	r2, r0, r0, asr r4
+    1a18:	00002478 	andeq	r2, r0, r8, ror r4
+    1a1c:	00002494 	muleq	r0, r4, r4
+
+00001a20 <__div0>:
+
+/* Replacement (=dummy) for GNU/Linux division-by zero handler */
+void
+__div0 (void)
+{
+    1a20:	e52de004 	str	lr, [sp, -#4]!
+  extern void hang (void);
+
+  hang ();
+    1a24:	e49de004 	ldr	lr, [sp], #4
+    1a28:	eafffbfd 	b	a24 <hang>
+
+00001a2c <enable_interrupts>:
+void
+enable_interrupts (void)
+{
+  return;
+}
+    1a2c:	e1a0f00e 	mov	pc, lr
+
+00001a30 <disable_interrupts>:
+
+int
+disable_interrupts (void)
+{
+  return 0;
+}
+    1a30:	e3a00000 	mov	r0, #0	; 0x0
+    1a34:	e1a0f00e 	mov	pc, lr
+
+00001a38 <bad_mode>:
+#endif
+
+
+void
+bad_mode (void)
+{
+    1a38:	e1a0c00d 	mov	ip, sp
+    1a3c:	e92dd800 	stmdb	sp!, {fp, ip, lr, pc}
+  puts ("Resetting CPU ...\n");
+    1a40:	e59f0010 	ldr	r0, [pc, #16]	; 1a58 <bad_mode+0x20>
+    1a44:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1a48:	ebfffc30 	bl	b10 <puts>
+  reset_cpu (0);
+    1a4c:	e3a00000 	mov	r0, #0	; 0x0
+    1a50:	e91b6800 	ldmdb	fp, {fp, sp, lr}
+    1a54:	eafffa49 	b	380 <reset_cpu>
+    1a58:	000024c0 	andeq	r2, r0, r0, asr #9
+
+00001a5c <show_regs>:
+}
+
+void
+show_regs (struct pt_regs *regs)
+{
+  return;
+}
+    1a5c:	e1a0f00e 	mov	pc, lr
+
+00001a60 <do_undefined_instruction>:
+
+void
+do_undefined_instruction (struct pt_regs *pt_regs)
+{
+    1a60:	e1a0c00d 	mov	ip, sp
+    1a64:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1a68:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1a6c:	e1a04000 	mov	r4, r0
+  puts ("undefined instruction\n");
+    1a70:	e59f0010 	ldr	r0, [pc, #16]	; 1a88 <do_undefined_instruction+0x28>
+    1a74:	ebfffc25 	bl	b10 <puts>
+  show_regs (pt_regs);
+    1a78:	e1a00004 	mov	r0, r4
+    1a7c:	ebfffff6 	bl	1a5c <show_regs>
+  bad_mode ();
+    1a80:	e91b6810 	ldmdb	fp, {r4, fp, sp, lr}
+    1a84:	eaffffeb 	b	1a38 <bad_mode>
+    1a88:	000024d4 	ldreqd	r2, [r0], -r4
+
+00001a8c <do_software_interrupt>:
+}
+
+void
+do_software_interrupt (struct pt_regs *pt_regs)
+{
+    1a8c:	e1a0c00d 	mov	ip, sp
+    1a90:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1a94:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1a98:	e1a04000 	mov	r4, r0
+  puts ("software interrupt\n");
+    1a9c:	e59f0010 	ldr	r0, [pc, #16]	; 1ab4 <do_software_interrupt+0x28>
+    1aa0:	ebfffc1a 	bl	b10 <puts>
+  show_regs (pt_regs);
+    1aa4:	e1a00004 	mov	r0, r4
+    1aa8:	ebffffeb 	bl	1a5c <show_regs>
+  bad_mode ();
+    1aac:	e91b6810 	ldmdb	fp, {r4, fp, sp, lr}
+    1ab0:	eaffffe0 	b	1a38 <bad_mode>
+    1ab4:	000024ec 	andeq	r2, r0, ip, ror #9
+
+00001ab8 <do_prefetch_abort>:
+}
+
+void
+do_prefetch_abort (struct pt_regs *pt_regs)
+{
+    1ab8:	e1a0c00d 	mov	ip, sp
+    1abc:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1ac0:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1ac4:	e1a04000 	mov	r4, r0
+  puts ("prefetch abort\n");
+    1ac8:	e59f0010 	ldr	r0, [pc, #16]	; 1ae0 <do_prefetch_abort+0x28>
+    1acc:	ebfffc0f 	bl	b10 <puts>
+  show_regs (pt_regs);
+    1ad0:	e1a00004 	mov	r0, r4
+    1ad4:	ebffffe0 	bl	1a5c <show_regs>
+  bad_mode ();
+    1ad8:	e91b6810 	ldmdb	fp, {r4, fp, sp, lr}
+    1adc:	eaffffd5 	b	1a38 <bad_mode>
+    1ae0:	00002500 	andeq	r2, r0, r0, lsl #10
+
+00001ae4 <do_data_abort>:
+}
+
+void
+do_data_abort (struct pt_regs *pt_regs)
+{
+    1ae4:	e1a0c00d 	mov	ip, sp
+    1ae8:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1aec:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1af0:	e1a04000 	mov	r4, r0
+  puts ("data abort\n");
+    1af4:	e59f0024 	ldr	r0, [pc, #36]	; 1b20 <do_data_abort+0x3c>
+    1af8:	ebfffc04 	bl	b10 <puts>
+  hexprint(*(int*)0xFFFFFF08);
+    1afc:	e3e030f7 	mvn	r3, #247	; 0xf7
+    1b00:	e5930000 	ldr	r0, [r3]
+    1b04:	ebfffa49 	bl	430 <hexprint>
+  puts ("\n");
+    1b08:	e59f0014 	ldr	r0, [pc, #20]	; 1b24 <do_data_abort+0x40>
+    1b0c:	ebfffbff 	bl	b10 <puts>
+  show_regs (pt_regs);
+    1b10:	e1a00004 	mov	r0, r4
+    1b14:	ebffffd0 	bl	1a5c <show_regs>
+  bad_mode ();
+    1b18:	e91b6810 	ldmdb	fp, {r4, fp, sp, lr}
+    1b1c:	eaffffc5 	b	1a38 <bad_mode>
+    1b20:	00002510 	andeq	r2, r0, r0, lsl r5
+    1b24:	000021f4 	streqd	r2, [r0], -r4
+
+00001b28 <do_not_used>:
+}
+
+void
+do_not_used (struct pt_regs *pt_regs)
+{
+    1b28:	e1a0c00d 	mov	ip, sp
+    1b2c:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1b30:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1b34:	e1a04000 	mov	r4, r0
+  puts ("not used\n");
+    1b38:	e59f0010 	ldr	r0, [pc, #16]	; 1b50 <do_not_used+0x28>
+    1b3c:	ebfffbf3 	bl	b10 <puts>
+  show_regs (pt_regs);
+    1b40:	e1a00004 	mov	r0, r4
+    1b44:	ebffffc4 	bl	1a5c <show_regs>
+  bad_mode ();
+    1b48:	e91b6810 	ldmdb	fp, {r4, fp, sp, lr}
+    1b4c:	eaffffb9 	b	1a38 <bad_mode>
+    1b50:	0000251c 	andeq	r2, r0, ip, lsl r5
+
+00001b54 <do_fiq>:
+}
+
+void
+do_fiq (struct pt_regs *pt_regs)
+{
+    1b54:	e1a0c00d 	mov	ip, sp
+    1b58:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1b5c:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1b60:	e1a04000 	mov	r4, r0
+  puts ("fast interrupt request\n");
+    1b64:	e59f0010 	ldr	r0, [pc, #16]	; 1b7c <do_fiq+0x28>
+    1b68:	ebfffbe8 	bl	b10 <puts>
+  show_regs (pt_regs);
+    1b6c:	e1a00004 	mov	r0, r4
+    1b70:	ebffffb9 	bl	1a5c <show_regs>
+  bad_mode ();
+    1b74:	e91b6810 	ldmdb	fp, {r4, fp, sp, lr}
+    1b78:	eaffffae 	b	1a38 <bad_mode>
+    1b7c:	00002528 	andeq	r2, r0, r8, lsr #10
+
+00001b80 <do_irq>:
+}
+
+void
+do_irq (struct pt_regs *pt_regs)
+{
+    1b80:	e1a0c00d 	mov	ip, sp
+    1b84:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1b88:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1b8c:	e1a04000 	mov	r4, r0
+  puts ("interrupt request\n");
+    1b90:	e59f0010 	ldr	r0, [pc, #16]	; 1ba8 <do_irq+0x28>
+    1b94:	ebfffbdd 	bl	b10 <puts>
+  show_regs (pt_regs);
+    1b98:	e1a00004 	mov	r0, r4
+    1b9c:	ebffffae 	bl	1a5c <show_regs>
+  bad_mode ();
+    1ba0:	e91b6810 	ldmdb	fp, {r4, fp, sp, lr}
+    1ba4:	eaffffa3 	b	1a38 <bad_mode>
+    1ba8:	00002540 	andeq	r2, r0, r0, asr #10
+
+00001bac <interrupt_init>:
+}
+
+static ulong timestamp;
+static ulong lastinc;
+
+int
+interrupt_init (void)
+{
+
+  tmr = AT91C_BASE_TC0;
+
+  /* enables TC1.0 clock */
+  *AT91C_PMC_PCER = 1 << AT91C_ID_TC0;	/* enable clock */
+    1bac:	e59f3060 	ldr	r3, [pc, #96]	; 1c14 <interrupt_init+0x68>
+    1bb0:	e3a02802 	mov	r2, #131072	; 0x20000
+    1bb4:	e5832000 	str	r2, [r3]
+
+  *AT91C_TCB0_BCR = 0;
+  *AT91C_TCB0_BMR =
+    AT91C_TCB_TC0XC0S_NONE | AT91C_TCB_TC1XC1S_NONE | AT91C_TCB_TC2XC2S_NONE;
+  tmr->TC_CCR = AT91C_TC_CLKDIS;
+  tmr->TC_CMR = AT91C_TC_TIMER_DIV1_CLOCK;	/* set to MCLK/2 */
+
+  tmr->TC_IDR = ~0ul;
+  tmr->TC_RC = TIMER_LOAD_VAL;
+    1bb8:	e59fc058 	ldr	ip, [pc, #88]	; 1c18 <interrupt_init+0x6c>
+  lastinc = TIMER_LOAD_VAL;
+    1bbc:	e59f3058 	ldr	r3, [pc, #88]	; 1c1c <interrupt_init+0x70>
+    1bc0:	e583c000 	str	ip, [r3]
+    1bc4:	e59f3054 	ldr	r3, [pc, #84]	; 1c20 <interrupt_init+0x74>
+    1bc8:	e3a00000 	mov	r0, #0	; 0x0
+    1bcc:	e5830000 	str	r0, [r3]
+    1bd0:	e3a02015 	mov	r2, #21	; 0x15
+    1bd4:	e2833004 	add	r3, r3, #4	; 0x4
+    1bd8:	e5832000 	str	r2, [r3]
+    1bdc:	e59f1040 	ldr	r1, [pc, #64]	; 1c24 <interrupt_init+0x78>
+    1be0:	e59f3040 	ldr	r3, [pc, #64]	; 1c28 <interrupt_init+0x7c>
+    1be4:	e5831000 	str	r1, [r3]
+    1be8:	e3a03002 	mov	r3, #2	; 0x2
+    1bec:	e5813000 	str	r3, [r1]
+  tmr->TC_CCR = AT91C_TC_SWTRG | AT91C_TC_CLKEN;
+  timestamp = 0;
+    1bf0:	e59f3034 	ldr	r3, [pc, #52]	; 1c2c <interrupt_init+0x80>
+    1bf4:	e5830000 	str	r0, [r3]
+    1bf8:	e3e03000 	mvn	r3, #0	; 0x0
+    1bfc:	e5810004 	str	r0, [r1, #4]
+    1c00:	e5813028 	str	r3, [r1, #40]
+    1c04:	e2833006 	add	r3, r3, #6	; 0x6
+    1c08:	e581c01c 	str	ip, [r1, #28]
+    1c0c:	e5813000 	str	r3, [r1]
+    1c10:	e1a0f00e 	mov	pc, lr
+    1c14:	fffffc10 	swinv	0x00fffc10
+    1c18:	0000ffff 	streqd	pc, [r0], -pc
+    1c1c:	000025e0 	andeq	r2, r0, r0, ror #11
+    1c20:	fffa00c0 	swinv	0x00fa00c0
+    1c24:	fffa0000 	swinv	0x00fa0000
+    1c28:	000025d8 	ldreqd	r2, [r0], -r8
+    1c2c:	000025dc 	ldreqd	r2, [r0], -ip
+
+00001c30 <reset_timer>:
+
+  return (0);
+}
+
+/*
+ * timer without interrupts
+ */
+
+void
+reset_timer (void)
+{
+    1c30:	e52de004 	str	lr, [sp, -#4]!
+  reset_timer_masked ();
+    1c34:	e49de004 	ldr	lr, [sp], #4
+    1c38:	ea00000d 	b	1c74 <reset_timer_masked>
+
+00001c3c <get_timer>:
+}
+
+ulong
+get_timer (ulong base)
+{
+    1c3c:	e1a0c00d 	mov	ip, sp
+    1c40:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1c44:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1c48:	e1a04000 	mov	r4, r0
+  return get_timer_masked () - base;
+    1c4c:	eb000016 	bl	1cac <get_timer_masked>
+    1c50:	e0640000 	rsb	r0, r4, r0
+}
+    1c54:	e91ba810 	ldmdb	fp, {r4, fp, sp, pc}
+
+00001c58 <set_timer>:
+
+void
+set_timer (ulong t)
+{
+  timestamp = t;
+    1c58:	e59f3004 	ldr	r3, [pc, #4]	; 1c64 <set_timer+0xc>
+    1c5c:	e5830000 	str	r0, [r3]
+    1c60:	e1a0f00e 	mov	pc, lr
+    1c64:	000025dc 	ldreqd	r2, [r0], -ip
+
+00001c68 <udelay>:
+}
+
+void
+udelay (unsigned long usec)
+{
+    1c68:	e52de004 	str	lr, [sp, -#4]!
+  udelay_masked (usec);
+    1c6c:	e49de004 	ldr	lr, [sp], #4
+    1c70:	ea000029 	b	1d1c <udelay_masked>
+
+00001c74 <reset_timer_masked>:
+}
+
+void
+reset_timer_masked (void)
+{
+  /* reset time */
+  lastinc = READ_TIMER;
+    1c74:	e59f3024 	ldr	r3, [pc, #36]	; 1ca0 <reset_timer_masked+0x2c>
+    1c78:	e5933000 	ldr	r3, [r3]
+    1c7c:	e5933010 	ldr	r3, [r3, #16]
+    1c80:	e59f201c 	ldr	r2, [pc, #28]	; 1ca4 <reset_timer_masked+0x30>
+    1c84:	e1a03803 	mov	r3, r3, lsl #16
+    1c88:	e1a03823 	mov	r3, r3, lsr #16
+    1c8c:	e5823000 	str	r3, [r2]
+  timestamp = 0;
+    1c90:	e59f3010 	ldr	r3, [pc, #16]	; 1ca8 <reset_timer_masked+0x34>
+    1c94:	e3a02000 	mov	r2, #0	; 0x0
+    1c98:	e5832000 	str	r2, [r3]
+    1c9c:	e1a0f00e 	mov	pc, lr
+    1ca0:	000025d8 	ldreqd	r2, [r0], -r8
+    1ca4:	000025e0 	andeq	r2, r0, r0, ror #11
+    1ca8:	000025dc 	ldreqd	r2, [r0], -ip
+
+00001cac <get_timer_masked>:
+}
+
+ulong
+get_timer_masked (void)
+{
+    1cac:	e52de004 	str	lr, [sp, -#4]!
+  ulong now = READ_TIMER;
+    1cb0:	e59f3058 	ldr	r3, [pc, #88]	; 1d10 <get_timer_masked+0x64>
+    1cb4:	e5933000 	ldr	r3, [r3]
+    1cb8:	e5932010 	ldr	r2, [r3, #16]
+
+  if (now >= lastinc)
+    1cbc:	e59f3050 	ldr	r3, [pc, #80]	; 1d14 <get_timer_masked+0x68>
+    1cc0:	e1a02802 	mov	r2, r2, lsl #16
+    1cc4:	e5933000 	ldr	r3, [r3]
+    1cc8:	e59fe048 	ldr	lr, [pc, #72]	; 1d18 <get_timer_masked+0x6c>
+    1ccc:	e1a02822 	mov	r2, r2, lsr #16
+    1cd0:	e1520003 	cmp	r2, r3
+    1cd4:	e0630002 	rsb	r0, r3, r2
+    1cd8:	e0631002 	rsb	r1, r3, r2
+    {
+      /* normal mode */
+      timestamp += now - lastinc;
+    }
+  else
+    {
+      /* we have an overflow ... */
+      timestamp += now + TIMER_LOAD_VAL - lastinc;
+    1cdc:	359e3000 	ldrcc	r3, [lr]
+    1ce0:	259e3000 	ldrcs	r3, [lr]
+    1ce4:	30833000 	addcc	r3, r3, r0
+    1ce8:	32833cff 	addcc	r3, r3, #65280	; 0xff00
+    1cec:	20833001 	addcs	r3, r3, r1
+    1cf0:	328330ff 	addcc	r3, r3, #255	; 0xff
+    1cf4:	258e3000 	strcs	r3, [lr]
+    1cf8:	358e3000 	strcc	r3, [lr]
+    }
+  lastinc = now;
+
+  return timestamp;
+    1cfc:	e59f3014 	ldr	r3, [pc, #20]	; 1d18 <get_timer_masked+0x6c>
+    1d00:	e5930000 	ldr	r0, [r3]
+    1d04:	e59f3008 	ldr	r3, [pc, #8]	; 1d14 <get_timer_masked+0x68>
+    1d08:	e5832000 	str	r2, [r3]
+}
+    1d0c:	e49df004 	ldr	pc, [sp], #4
+    1d10:	000025d8 	ldreqd	r2, [r0], -r8
+    1d14:	000025e0 	andeq	r2, r0, r0, ror #11
+    1d18:	000025dc 	ldreqd	r2, [r0], -ip
+
+00001d1c <udelay_masked>:
+
+void
+udelay_masked (unsigned long usec)
+{
+  ulong tmo;
+
+  tmo = usec / 1000;
+    1d1c:	e59f203c 	ldr	r2, [pc, #60]	; 1d60 <udelay_masked+0x44>
+    1d20:	e0831092 	umull	r1, r3, r2, r0
+    1d24:	e1a0c00d 	mov	ip, sp
+    1d28:	e92dd810 	stmdb	sp!, {r4, fp, ip, lr, pc}
+    1d2c:	e1a04323 	mov	r4, r3, lsr #6
+  tmo *= CFG_HZ;
+    1d30:	e0643204 	rsb	r3, r4, r4, lsl #4
+    1d34:	e0633203 	rsb	r3, r3, r3, lsl #4
+    1d38:	e0833303 	add	r3, r3, r3, lsl #6
+    1d3c:	e1a04583 	mov	r4, r3, lsl #11
+  tmo /= 1000;
+    1d40:	e0831492 	umull	r1, r3, r2, r4
+    1d44:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1d48:	e1a04323 	mov	r4, r3, lsr #6
+
+  reset_timer_masked ();
+    1d4c:	ebffffc8 	bl	1c74 <reset_timer_masked>
+
+  while (get_timer_masked () < tmo)
+    1d50:	ebffffd5 	bl	1cac <get_timer_masked>
+    1d54:	e1500004 	cmp	r0, r4
+    1d58:	291ba810 	ldmcsdb	fp, {r4, fp, sp, pc}
+    1d5c:	eafffffb 	b	1d50 <udelay_masked+0x34>
+    1d60:	10624dd3 	ldrned	r4, [r2], -#211
+
+00001d64 <get_ticks>:
+     /*NOP*/;
+}
+
+/*
+ * This function is derived from PowerPC code (read timebase as long long).
+ * On ARM it just returns the timer value.
+ */
+unsigned long long
+get_ticks (void)
+{
+    1d64:	e1a0c00d 	mov	ip, sp
+    1d68:	e92dd800 	stmdb	sp!, {fp, ip, lr, pc}
+  return get_timer (0);
+    1d6c:	e3a00000 	mov	r0, #0	; 0x0
+    1d70:	e24cb004 	sub	fp, ip, #4	; 0x4
+    1d74:	ebffffb0 	bl	1c3c <get_timer>
+    1d78:	e3a01000 	mov	r1, #0	; 0x0
+}
+    1d7c:	e91ba800 	ldmdb	fp, {fp, sp, pc}
+
+00001d80 <get_tbclk>:
+
+/*
+ * This function is derived from PowerPC code (timebase clock frequency).
+ * On ARM it returns the number of timer ticks per second.
+ */
+ulong
+get_tbclk (void)
+{
+  ulong tbclk;
+
+  tbclk = CFG_HZ;
+  return tbclk;
+}
+    1d80:	e59f0000 	ldr	r0, [pc, #0]	; 1d88 <get_tbclk+0x8>
+    1d84:	e1a0f00e 	mov	pc, lr
+    1d88:	01c90800 	biceq	r0, r9, r0, lsl #16
+
+00001d8c <__udivsi3>:
+    1d8c:	e3510000 	cmp	r1, #0	; 0x0
+    1d90:	0a00001f 	beq	1e14 <Ldiv0>
+    1d94:	e3a03001 	mov	r3, #1	; 0x1
+    1d98:	e3a02000 	mov	r2, #0	; 0x0
+    1d9c:	e1500001 	cmp	r0, r1
+    1da0:	3a000019 	bcc	1e0c <Lgot_result>
+
+00001da4 <Loop1>:
+    1da4:	e3510201 	cmp	r1, #268435456	; 0x10000000
+    1da8:	31510000 	cmpcc	r1, r0
+    1dac:	31a01201 	movcc	r1, r1, lsl #4
+    1db0:	31a03203 	movcc	r3, r3, lsl #4
+    1db4:	3afffffa 	bcc	1da4 <Loop1>
+
+00001db8 <Lbignum>:
+    1db8:	e3510102 	cmp	r1, #-2147483648	; 0x80000000
+    1dbc:	31510000 	cmpcc	r1, r0
+    1dc0:	31a01081 	movcc	r1, r1, lsl #1
+    1dc4:	31a03083 	movcc	r3, r3, lsl #1
+    1dc8:	3afffffa 	bcc	1db8 <Lbignum>
+
+00001dcc <Loop3>:
+    1dcc:	e1500001 	cmp	r0, r1
+    1dd0:	20400001 	subcs	r0, r0, r1
+    1dd4:	21822003 	orrcs	r2, r2, r3
+    1dd8:	e15000a1 	cmp	r0, r1, lsr #1
+    1ddc:	204000a1 	subcs	r0, r0, r1, lsr #1
+    1de0:	218220a3 	orrcs	r2, r2, r3, lsr #1
+    1de4:	e1500121 	cmp	r0, r1, lsr #2
+    1de8:	20400121 	subcs	r0, r0, r1, lsr #2
+    1dec:	21822123 	orrcs	r2, r2, r3, lsr #2
+    1df0:	e15001a1 	cmp	r0, r1, lsr #3
+    1df4:	204001a1 	subcs	r0, r0, r1, lsr #3
+    1df8:	218221a3 	orrcs	r2, r2, r3, lsr #3
+    1dfc:	e3500000 	cmp	r0, #0	; 0x0
+    1e00:	11b03223 	movnes	r3, r3, lsr #4
+    1e04:	11a01221 	movne	r1, r1, lsr #4
+    1e08:	1affffef 	bne	1dcc <Loop3>
+
+00001e0c <Lgot_result>:
+    1e0c:	e1a00002 	mov	r0, r2
+    1e10:	e1a0f00e 	mov	pc, lr
+
+00001e14 <Ldiv0>:
+    1e14:	e52de004 	str	lr, [sp, -#4]!
+    1e18:	ebffff00 	bl	1a20 <__div0>
+    1e1c:	e3a00000 	mov	r0, #0	; 0x0
+    1e20:	e8bd8000 	ldmia	sp!, {pc}
+
+00001e24 <__umodsi3>:
+    1e24:	e3510000 	cmp	r1, #0	; 0x0
+    1e28:	0a000029 	beq	1ed4 <Ldiv0>
+    1e2c:	e3510001 	cmp	r1, #1	; 0x1
+    1e30:	11500001 	cmpne	r0, r1
+    1e34:	03a00000 	moveq	r0, #0	; 0x0
+    1e38:	31a0f00e 	movcc	pc, lr
+    1e3c:	e3a03001 	mov	r3, #1	; 0x1
+
+00001e40 <Loop1>:
+    1e40:	e3510201 	cmp	r1, #268435456	; 0x10000000
+    1e44:	31510000 	cmpcc	r1, r0
+    1e48:	31a01201 	movcc	r1, r1, lsl #4
+    1e4c:	31a03203 	movcc	r3, r3, lsl #4
+    1e50:	3afffffa 	bcc	1e40 <Loop1>
+
+00001e54 <Lbignum>:
+    1e54:	e3510102 	cmp	r1, #-2147483648	; 0x80000000
+    1e58:	31510000 	cmpcc	r1, r0
+    1e5c:	31a01081 	movcc	r1, r1, lsl #1
+    1e60:	31a03083 	movcc	r3, r3, lsl #1
+    1e64:	3afffffa 	bcc	1e54 <Lbignum>
+
+00001e68 <Loop3>:
+    1e68:	e3a02000 	mov	r2, #0	; 0x0
+    1e6c:	e1500001 	cmp	r0, r1
+    1e70:	20400001 	subcs	r0, r0, r1
+    1e74:	e15000a1 	cmp	r0, r1, lsr #1
+    1e78:	204000a1 	subcs	r0, r0, r1, lsr #1
+    1e7c:	218220e3 	orrcs	r2, r2, r3, ror #1
+    1e80:	e1500121 	cmp	r0, r1, lsr #2
+    1e84:	20400121 	subcs	r0, r0, r1, lsr #2
+    1e88:	21822163 	orrcs	r2, r2, r3, ror #2
+    1e8c:	e15001a1 	cmp	r0, r1, lsr #3
+    1e90:	204001a1 	subcs	r0, r0, r1, lsr #3
+    1e94:	218221e3 	orrcs	r2, r2, r3, ror #3
+    1e98:	e1a0c003 	mov	ip, r3
+    1e9c:	e3500000 	cmp	r0, #0	; 0x0
+    1ea0:	11b03223 	movnes	r3, r3, lsr #4
+    1ea4:	11a01221 	movne	r1, r1, lsr #4
+    1ea8:	1affffee 	bne	1e68 <Loop3>
+
+00001eac <Lfixup_dividend>:
+    1eac:	e212220e 	ands	r2, r2, #-536870912	; 0xe0000000
+    1eb0:	131c0007 	tstne	ip, #7	; 0x7
+    1eb4:	0a000005 	beq	1ed0 <Lgot_result>
+    1eb8:	e11201ec 	tst	r2, ip, ror #3
+    1ebc:	108001a1 	addne	r0, r0, r1, lsr #3
+    1ec0:	e112016c 	tst	r2, ip, ror #2
+    1ec4:	10800121 	addne	r0, r0, r1, lsr #2
+    1ec8:	e11200ec 	tst	r2, ip, ror #1
+    1ecc:	108000a1 	addne	r0, r0, r1, lsr #1
+
+00001ed0 <Lgot_result>:
+    1ed0:	e1a0f00e 	mov	pc, lr
+
+00001ed4 <Ldiv0>:
+    1ed4:	e52de004 	str	lr, [sp, -#4]!
+    1ed8:	ebfffed0 	bl	1a20 <__div0>
+    1edc:	e3a00000 	mov	r0, #0	; 0x0
+    1ee0:	e8bd8000 	ldmia	sp!, {pc}
+Disassembly of section .glue_7:
+Disassembly of section .glue_7t:
+Disassembly of section .rodata:
+
+00001ee4 <ONE_MBYTES>:
+    1ee4:	00100000 	andeqs	r0, r0, r0
+    1ee8:	61656c50 	cmnvs	r5, r0, asr ip
+    1eec:	74206573 	strvct	r6, [r0], -#1395
+    1ef0:	736e6172 	cmnvc	lr, #-2147483620	; 0x8000001c
+    1ef4:	20726566 	rsbcss	r6, r2, r6, ror #10
+    1ef8:	656c6946 	strvsb	r6, [ip, -#2374]!
+    1efc:	74737973 	ldrvcbt	r7, [r3], -#2419
+    1f00:	58206d65 	stmplda	r0!, {r0, r2, r5, r6, r8, sl, fp, sp, lr}
+    1f04:	65646f6d 	strvsb	r6, [r4, -#3949]!
+    1f08:	00000a6d 	andeq	r0, r0, sp, ror #20
+    1f0c:	61656c50 	cmnvs	r5, r0, asr ip
+    1f10:	74206573 	strvct	r6, [r0], -#1395
+    1f14:	736e6172 	cmnvc	lr, #-2147483620	; 0x8000001c
+    1f18:	20726566 	rsbcss	r6, r2, r6, ror #10
+    1f1c:	6e72654b 	cdpvs	5, 7, cr6, cr2, cr11, {2}
+    1f20:	76206c65 	strvct	r6, [r0], -r5, ror #24
+    1f24:	58206169 	stmplda	r0!, {r0, r3, r5, r6, r8, sp, lr}
+    1f28:	65646f6d 	strvsb	r6, [r4, -#3949]!
+    1f2c:	00000a6d 	andeq	r0, r0, sp, ror #20
+    1f30:	61656c50 	cmnvs	r5, r0, asr ip
+    1f34:	74206573 	strvct	r6, [r0], -#1395
+    1f38:	736e6172 	cmnvc	lr, #-2147483620	; 0x8000001c
+    1f3c:	20726566 	rsbcss	r6, r2, r6, ror #10
+    1f40:	6f622d75 	swivs	0x00622d75
+    1f44:	622e746f 	eorvs	r7, lr, #1862270976	; 0x6f000000
+    1f48:	76206e69 	strvct	r6, [r0], -r9, ror #28
+    1f4c:	58206169 	stmplda	r0!, {r0, r3, r5, r6, r8, sp, lr}
+    1f50:	65646f6d 	strvsb	r6, [r4, -#3949]!
+    1f54:	00000a6d 	andeq	r0, r0, sp, ror #20
+
+00001f58 <crc16tab>:
+    1f58:	10210000 	eorne	r0, r1, r0
+    1f5c:	30632042 	rsbcc	r2, r3, r2, asr #32
+    1f60:	50a54084 	adcpl	r4, r5, r4, lsl #1
+    1f64:	70e760c6 	rscvc	r6, r7, r6, asr #1
+    1f68:	91298108 	teqls	r9, r8, lsl #2
+    1f6c:	b16ba14a 	cmnlt	fp, sl, asr #2
+    1f70:	d1adc18c 	movle	ip, ip, lsl #3
+    1f74:	f1efe1ce 	mvnnv	lr, lr, asr #3
+    1f78:	02101231 	andeqs	r1, r0, #268435459	; 0x10000003
+    1f7c:	22523273 	subcss	r3, r2, #805306375	; 0x30000007
+    1f80:	429452b5 	addmis	r5, r4, #1342177291	; 0x5000000b
+    1f84:	62d672f7 	sbcvss	r7, r6, #1879048207	; 0x7000000f
+    1f88:	83189339 	tsthi	r8, #-469762048	; 0xe4000000
+    1f8c:	a35ab37b 	cmpge	sl, #-335544319	; 0xec000001
+    1f90:	c39cd3bd 	orrgts	sp, ip, #-201326590	; 0xf4000002
+    1f94:	e3def3ff 	bics	pc, lr, #-67108861	; 0xfc000003
+    1f98:	34432462 	strccb	r2, [r3], -#1122
+    1f9c:	14010420 	strne	r0, [r1], -#1056
+    1fa0:	74c764e6 	strvcb	r6, [r7], #1254
+    1fa4:	548544a4 	strpl	r4, [r5], #1188
+    1fa8:	b54ba56a 	strltb	sl, [fp, -#1386]
+    1fac:	95098528 	strls	r8, [r9, -#1320]
+    1fb0:	f5cfe5ee 	strnvb	lr, [pc, #1518]	; 25a6 <__bss_start+0x4e>
+    1fb4:	d58dc5ac 	strle	ip, [sp, #1452]
+    1fb8:	26723653 	undefined
+    1fbc:	06301611 	undefined
+    1fc0:	66f676d7 	undefined
+    1fc4:	46b45695 	undefined
+    1fc8:	a77ab75b 	undefined
+    1fcc:	87389719 	undefined
+    1fd0:	e7fef7df 	undefined
+    1fd4:	c7bcd79d 	undefined
+    1fd8:	58e548c4 	stmplia	r5!, {r2, r6, r7, fp, lr}^
+    1fdc:	78a76886 	stmvcia	r7!, {r1, r2, r7, fp, sp, lr}
+    1fe0:	18610840 	stmneda	r1!, {r6, fp}^
+    1fe4:	38232802 	stmccda	r3!, {r1, fp, sp}
+    1fe8:	d9edc9cc 	stmleib	sp!, {r2, r3, r6, r7, r8, fp, lr, pc}^
+    1fec:	f9afe98e 	stmnvib	pc!, {r1, r2, r3, r7, r8, fp, sp, lr, pc}
+    1ff0:	99698948 	stmlsdb	r9!, {r3, r6, r8, fp, pc}^
+    1ff4:	b92ba90a 	stmltdb	fp!, {r1, r3, r8, fp, sp, pc}
+    1ff8:	4ad45af5 	bmi	ff518bd4 <_end+0xff5165f0>
+    1ffc:	6a967ab7 	bvs	fe5a0ae0 <_end+0xfe59e4fc>
+    2000:	0a501a71 	beq	14089cc <_end+0x14063e8>
+    2004:	2a123a33 	bcs	4908d8 <_end+0x48e2f4>
+    2008:	cbdcdbfd 	blgt	ff739004 <_end+0xff736a20>
+    200c:	eb9efbbf 	bl	fe7c0f10 <_end+0xfe7be92c>
+    2010:	8b589b79 	blhi	1628dfc <_end+0x1626818>
+    2014:	ab1abb3b 	blge	6b0d08 <_end+0x6ae724>
+    2018:	7c876ca6 	stcvc	12, cr6, [r7], #664
+    201c:	5cc54ce4 	stcpll	12, cr4, [r5], #912
+    2020:	3c032c22 	stccc	12, cr2, [r3], -#136
+    2024:	1c410c60 	mcrrne	12, 6, r0, r1, cr0
+    2028:	fd8fedae 	stc2	13, cr14, [pc, #696]
+    202c:	ddcdcdec 	stclel	13, cr12, [sp, #944]
+    2030:	bd0bad2a 	stclt	13, cr10, [fp, -#168]
+    2034:	9d498d68 	stclsl	13, cr8, [r9, -#416]
+    2038:	6eb67e97 	mrcvs	14, 5, r7, cr6, cr7, {4}
+    203c:	4ef45ed5 	mrcmi	14, 7, r5, cr4, cr5, {6}
+    2040:	2e323e13 	mrccs	14, 1, r3, cr2, cr3, {0}
+    2044:	0e701e51 	mrceq	14, 3, r1, cr0, cr1, {2}
+    2048:	efbeff9f 	swi	0x00beff9f
+    204c:	cffcdfdd 	swigt	0x00fcdfdd
+    2050:	af3abf1b 	swige	0x003abf1b
+    2054:	8f789f59 	swihi	0x00789f59
+    2058:	81a99188 	movhi	r9, r8, lsl #3
+    205c:	a1ebb1ca 	mvnge	fp, sl, asr #3
+    2060:	c12dd10c 	teqgt	sp, ip, lsl #2
+    2064:	e16ff14e 	msr	SPSR_fsxc, lr, asr #2
+    2068:	00a11080 	adceq	r1, r1, r0, lsl #1
+    206c:	20e330c2 	rsccs	r3, r3, r2, asr #1
+    2070:	40255004 	eormi	r5, r5, r4
+    2074:	60677046 	rsbvs	r7, r7, r6, asr #32
+    2078:	939883b9 	orrlss	r8, r8, #-469762046	; 0xe4000002
+    207c:	b3daa3fb 	biclts	sl, sl, #-335544317	; 0xec000003
+    2080:	d31cc33d 	tstle	ip, #-201326592	; 0xf4000000
+    2084:	f35ee37f 	cmpnv	lr, #-67108863	; 0xfc000001
+    2088:	129002b1 	addnes	r0, r0, #268435467	; 0x1000000b
+    208c:	32d222f3 	sbcccs	r2, r2, #805306383	; 0x3000000f
+    2090:	52144235 	andpls	r4, r4, #1342177283	; 0x50000003
+    2094:	72566277 	subvcs	r6, r6, #1879048199	; 0x70000007
+    2098:	a5cbb5ea 	strgeb	fp, [fp, #1514]
+    209c:	858995a8 	strhi	r9, [r9, #1448]
+    20a0:	e54ff56e 	strb	pc, [pc, #-1390]	; 1b3a <do_not_used+0x12>
+    20a4:	c50dd52c 	strgt	sp, [sp, -#1324]
+    20a8:	24c334e2 	strcsb	r3, [r3], #1250
+    20ac:	048114a0 	streq	r1, [r1], #1184
+    20b0:	64477466 	strvsb	r7, [r7], -#1126
+    20b4:	44055424 	strmi	r5, [r5], -#1060
+    20b8:	b7faa7db 	undefined
+    20bc:	97b88799 	undefined
+    20c0:	f77ee75f 	undefined
+    20c4:	d73cc71d 	undefined
+    20c8:	36f226d3 	undefined
+    20cc:	16b00691 	undefined
+    20d0:	76766657 	undefined
+    20d4:	56344615 	undefined
+    20d8:	c96dd94c 	stmgtdb	sp!, {r2, r3, r6, r8, fp, ip, lr, pc}^
+    20dc:	e92ff90e 	stmdb	pc!, {r1, r2, r3, r8, fp, ip, sp, lr, pc}
+    20e0:	89e999c8 	stmhiib	r9!, {r3, r6, r7, r8, fp, ip, pc}^
+    20e4:	a9abb98a 	stmgeib	fp!, {r1, r3, r7, r8, fp, ip, sp, pc}
+    20e8:	48655844 	stmmida	r5!, {r2, r6, fp, ip, lr}^
+    20ec:	68277806 	stmvsda	r7!, {r1, r2, fp, ip, sp, lr}
+    20f0:	08e118c0 	stmeqia	r1!, {r6, r7, fp, ip}^
+    20f4:	28a33882 	stmcsia	r3!, {r1, r7, fp, ip, sp}
+    20f8:	db5ccb7d 	blle	1734ef4 <_end+0x1732910>
+    20fc:	fb1eeb3f 	blx	7bce02 <_end+0x7ba81e>
+    2100:	9bd88bf9 	blls	ff6250ec <_end+0xff622b08>
+    2104:	bb9aabbb 	bllt	fe6acff8 <_end+0xfe6aaa14>
+    2108:	5a544a75 	bpl	1514ae4 <_end+0x1512500>
+    210c:	7a166a37 	bvc	59c9f0 <_end+0x59a40c>
+    2110:	1ad00af1 	bne	ff404cdc <_end+0xff4026f8>
+    2114:	3a922ab3 	bcc	fe48cbe8 <_end+0xfe48a604>
+    2118:	ed0ffd2e 	stc	13, cr15, [pc, -#184]
+    211c:	cd4ddd6c 	stcgtl	13, cr13, [sp, -#432]
+    2120:	ad8bbdaa 	stcge	13, cr11, [fp, #680]
+    2124:	8dc99de8 	stchil	13, cr9, [r9, #928]
+    2128:	6c077c26 	stcvs	12, cr7, [r7], -#152
+    212c:	4c455c64 	mcrrmi	12, 6, r5, r5, cr4
+    2130:	2c833ca2 	stccs	12, cr3, [r3], #648
+    2134:	0cc11ce0 	stceql	12, cr1, [r1], #896
+    2138:	ff3eef1f 	swinv	0x003eef1f
+    213c:	df7ccf5d 	swile	0x007ccf5d
+    2140:	bfbaaf9b 	swilt	0x00baaf9b
+    2144:	9ff88fd9 	swils	0x00f88fd9
+    2148:	7e366e17 	mrcvc	14, 1, r6, cr6, cr7, {0}
+    214c:	5e744e55 	mrcpl	14, 3, r4, cr4, cr5, {2}
+    2150:	3eb22e93 	mrccc	14, 5, r2, cr2, cr3, {4}
+    2154:	1ef00ed1 	mrcne	14, 7, r0, cr0, cr1, {6}
+Disassembly of section .rodata.str1.4:
+
+00002158 <.rodata.str1.4>:
+    2158:	00007830 	andeq	r7, r0, r0, lsr r8
+    215c:	6572500a 	ldrvsb	r5, [r2, -#10]!
+    2160:	696d696c 	stmvsdb	sp!, {r2, r3, r5, r6, r8, fp, sp, lr}^
+    2164:	7972616e 	ldmvcdb	r2!, {r1, r2, r3, r5, r6, r8, sp, lr}^
+    2168:	4d415220 	sfmmi	f5, 2, [r1, -#128]
+    216c:	73657420 	cmnvc	r5, #536870912	; 0x20000000
+    2170:	61662074 	cmnvs	r6, r4, ror r0
+    2174:	64656c69 	strvsbt	r6, [r5], -#3177
+    2178:	00000000 	andeq	r0, r0, r0
+    217c:	2e0a2e0a 	cdpcs	14, 0, cr2, cr10, cr10, {0}
+    2180:	440a2e0a 	strmi	r2, [sl], -#3594
+    2184:	65727261 	ldrvsb	r7, [r2, -#609]!
+    2188:	73276c6c 	teqvc	r7, #27648	; 0x6c00
+    218c:	616f6c20 	cmnvs	pc, r0, lsr #24
+    2190:	20726564 	rsbcss	r6, r2, r4, ror #10
+    2194:	6854202d 	ldmvsda	r4, {r0, r2, r3, r5, sp}^
+    2198:	736b6e61 	cmnvc	fp, #1552	; 0x610
+    219c:	206f7420 	rsbcs	r7, pc, r0, lsr #8
+    21a0:	20656874 	rsbcs	r6, r5, r4, ror r8
+    21a4:	6f622d75 	swivs	0x00622d75
+    21a8:	7020746f 	eorvc	r7, r0, pc, ror #8
+    21ac:	656a6f72 	strvsb	r6, [sl, -#3954]!
+    21b0:	560a7463 	strpl	r7, [sl], -r3, ror #8
+    21b4:	69737265 	ldmvsdb	r3!, {r0, r2, r5, r6, r9, ip, sp, lr}^
+    21b8:	31206e6f 	teqcc	r0, pc, ror #28
+    21bc:	000a302e 	andeq	r3, sl, lr, lsr #32
+    21c0:	3a4d4152 	bcc	1352710 <_end+0x135012c>
+    21c4:	00000000 	andeq	r0, r0, r0
+    21c8:	000a424d 	andeq	r4, sl, sp, asr #4
+    21cc:	203a310a 	eorcss	r3, sl, sl, lsl #2
+    21d0:	6f6c7055 	swivs	0x006c7055
+    21d4:	44206461 	strmit	r6, [r0], -#1121
+    21d8:	65727261 	ldrvsb	r7, [r2, -#609]!
+    21dc:	73276c6c 	teqvc	r7, #27648	; 0x6c00
+    21e0:	616f6c20 	cmnvs	pc, r0, lsr #24
+    21e4:	20726564 	rsbcss	r6, r2, r4, ror #10
+    21e8:	44206f74 	strmit	r6, [r0], -#3956
+    21ec:	66617461 	strvsbt	r7, [r1], -r1, ror #8
+    21f0:	6873616c 	ldmvsda	r3!, {r2, r3, r5, r6, r8, sp, lr}^
+    21f4:	0000000a 	andeq	r0, r0, sl
+    21f8:	55203a32 	strpl	r3, [r0, -#2610]!
+    21fc:	616f6c70 	cmnvs	pc, r0, ror ip
+    2200:	2d752064 	ldccsl	0, cr2, [r5, -#400]!
+    2204:	746f6f62 	strvcbt	r6, [pc], #3938	; 220c <crc16tab+0x2b4>
+    2208:	206f7420 	rsbcs	r7, pc, r0, lsr #8
+    220c:	61746144 	cmnvs	r4, r4, asr #2
+    2210:	73616c66 	cmnvc	r1, #26112	; 0x6600
+    2214:	00000a68 	andeq	r0, r0, r8, ror #20
+    2218:	55203a33 	strpl	r3, [r0, -#2611]!
+    221c:	616f6c70 	cmnvs	pc, r0, ror ip
+    2220:	654b2064 	strvsb	r2, [fp, -#100]
+    2224:	6c656e72 	stcvsl	14, cr6, [r5], -#456
+    2228:	206f7420 	rsbcs	r7, pc, r0, lsr #8
+    222c:	61746144 	cmnvs	r4, r4, asr #2
+    2230:	73616c66 	cmnvc	r1, #26112	; 0x6600
+    2234:	00000a68 	andeq	r0, r0, r8, ror #20
+    2238:	53203a34 	teqpl	r0, #212992	; 0x34000
+    223c:	74726174 	ldrvcbt	r6, [r2], -#372
+    2240:	622d7520 	eorvs	r7, sp, #134217728	; 0x8000000
+    2244:	0a746f6f 	beq	1d1e008 <_end+0x1d1ba24>
+    2248:	00000000 	andeq	r0, r0, r0
+    224c:	55203a35 	strpl	r3, [r0, -#2613]!
+    2250:	616f6c70 	cmnvs	pc, r0, ror ip
+    2254:	69462064 	stmvsdb	r6, {r2, r5, r6, sp}^
+    2258:	7973656c 	ldmvcdb	r3!, {r2, r3, r5, r6, r8, sl, sp, lr}^
+    225c:	6d657473 	cfstrdvs	mvd7, [r5, -#460]!
+    2260:	616d6920 	cmnvs	sp, r0, lsr #18
+    2264:	000a6567 	andeq	r6, sl, r7, ror #10
+    2268:	4d203a36 	fstmdbsmi	r0!, {s6-s59}
+    226c:	726f6d65 	rsbvc	r6, pc, #6464	; 0x1940
+    2270:	65742079 	ldrvsb	r2, [r4, -#121]!
+    2274:	000a7473 	andeq	r7, sl, r3, ror r4
+    2278:	61746144 	cmnvs	r4, r4, asr #2
+    227c:	73616c66 	cmnvc	r1, #26112	; 0x6600
+    2280:	65722068 	ldrvsb	r2, [r2, -#104]!
+    2284:	73206461 	teqvc	r0, #1627389952	; 0x61000000
+    2288:	65636375 	strvsb	r6, [r3, -#885]!
+    228c:	75667373 	strvcb	r7, [r6, -#883]!
+    2290:	53203a6c 	teqpl	r0, #442368	; 0x6c000
+    2294:	74726174 	ldrvcbt	r6, [r2], -#372
+    2298:	20676e69 	rsbcs	r6, r7, r9, ror #28
+    229c:	6f622d55 	swivs	0x00622d55
+    22a0:	000a746f 	andeq	r7, sl, pc, ror #8
+    22a4:	61746144 	cmnvs	r4, r4, asr #2
+    22a8:	73616c66 	cmnvc	r1, #26112	; 0x6600
+    22ac:	6f6e2068 	swivs	0x006e2068
+    22b0:	6f662074 	swivs	0x00662074
+    22b4:	0a646e75 	beq	191dc90 <_end+0x191b6ac>
+    22b8:	00000000 	andeq	r0, r0, r0
+    22bc:	61766e49 	cmnvs	r6, r9, asr #28
+    22c0:	2064696c 	rsbcs	r6, r4, ip, ror #18
+    22c4:	75706e69 	ldrvcb	r6, [r0, -#3689]!
+    22c8:	00000a74 	andeq	r0, r0, r4, ror sl
+    22cc:	7365540a 	cmnvc	r5, #167772160	; 0xa000000
+    22d0:	676e6974 	undefined
+    22d4:	4d415220 	sfmmi	f5, 2, [r1, -#128]
+    22d8:	6544202c 	strvsb	r2, [r4, -#44]
+    22dc:	74636574 	strvcbt	r6, [r3], -#1396
+    22e0:	00206465 	eoreq	r6, r0, r5, ror #8
+    22e4:	3d20424d 	sfmcc	f4, 4, [r0, -#308]!
+    22e8:	00203e3d 	eoreq	r3, r0, sp, lsr lr
+    22ec:	000a4b4f 	andeq	r4, sl, pc, asr #22
+    22f0:	4c494146 	mcrrmi	1, 4, r4, r9, cr6
+    22f4:	000a4445 	andeq	r4, sl, r5, asr #8
+    22f8:	74697257 	strvcbt	r7, [r9], -#599
+    22fc:	20676e69 	rsbcs	r6, r7, r9, ror #28
+    2300:	61746144 	cmnvs	r4, r4, asr #2
+    2304:	73616c66 	cmnvc	r1, #26112	; 0x6600
+    2308:	2e2e2e68 	cdpcs	14, 2, cr2, cr14, cr8, {3}
+    230c:	656c7020 	strvsb	r7, [ip, -#32]!
+    2310:	20657361 	rsbcs	r7, r5, r1, ror #6
+    2314:	74696177 	strvcbt	r6, [r9], -#375
+    2318:	0a2e2e2e 	beq	b8dbd8 <_end+0xb8b5f4>
+    231c:	00000000 	andeq	r0, r0, r0
+    2320:	61746144 	cmnvs	r4, r4, asr #2
+    2324:	73616c66 	cmnvc	r1, #26112	; 0x6600
+    2328:	72772068 	rsbvcs	r2, r7, #104	; 0x68
+    232c:	20657469 	rsbcs	r7, r5, r9, ror #8
+    2330:	63637573 	cmnvs	r3, #482344960	; 0x1cc00000
+    2334:	66737365 	ldrvsbt	r7, [r3], -r5, ror #6
+    2338:	000a6c75 	andeq	r6, sl, r5, ror ip
+    233c:	656c500a 	strvsb	r5, [ip, -#10]!
+    2340:	20657361 	rsbcs	r7, r5, r1, ror #6
+    2344:	74696177 	strvcbt	r6, [r9], -#375
+    2348:	0a2e2e2e 	beq	b8dc08 <_end+0xb8b624>
+    234c:	00000000 	andeq	r0, r0, r0
+    2350:	65636552 	strvsb	r6, [r3, -#1362]!
+    2354:	64657669 	strvsbt	r7, [r5], -#1641
+    2358:	00000020 	andeq	r0, r0, r0, lsr #32
+    235c:	74796220 	ldrvcbt	r6, [r9], -#544
+    2360:	000a7365 	andeq	r7, sl, r5, ror #6
+    2364:	69646f4d 	stmvsdb	r4!, {r0, r2, r3, r6, r8, r9, sl, fp, sp, lr}^
+    2368:	64656966 	strvsbt	r6, [r5], -#2406
+    236c:	4d524120 	ldfmie	f4, [r2, -#128]
+    2370:	63657620 	cmnvs	r5, #33554432	; 0x2000000
+    2374:	20726f74 	rsbcss	r6, r2, r4, ror pc
+    2378:	00000a36 	andeq	r0, r0, r6, lsr sl
+    237c:	20232323 	eorcs	r2, r3, r3, lsr #6
+    2380:	4f525245 	swimi	0x00525245
+    2384:	23232052 	teqcs	r3, #82	; 0x52
+    2388:	6c502023 	mrrcvs	0, 2, r2, r0, cr3
+    238c:	65736165 	ldrvsb	r6, [r3, -#357]!
+    2390:	53455220 	cmppl	r5, #2	; 0x2
+    2394:	74205445 	strvct	r5, [r0], -#1093
+    2398:	62206568 	eorvs	r6, r0, #436207616	; 0x1a000000
+    239c:	6472616f 	ldrvsbt	r6, [r2], -#367
+    23a0:	23232320 	teqcs	r3, #-2147483648	; 0x80000000
+    23a4:	0000000a 	andeq	r0, r0, sl
+    23a8:	65636552 	strvsb	r6, [r3, -#1362]!
+    23ac:	6e697669 	cdpvs	6, 6, cr7, cr9, cr9, {3}
+    23b0:	6d582067 	ldcvsl	0, cr2, [r8, -#412]
+    23b4:	6d65646f 	cfstrdvs	mvd6, [r5, -#444]!
+    23b8:	61727420 	cmnvs	r2, r0, lsr #8
+    23bc:	6566736e 	strvsb	r7, [r6, -#878]!
+    23c0:	00000a72 	andeq	r0, r0, r2, ror sl
+    23c4:	6f727245 	swivs	0x00727245
+    23c8:	69542072 	ldmvsdb	r4, {r1, r4, r5, r6, sp}^
+    23cc:	756f656d 	strvcb	r6, [pc, #-1389]!	; 1e67 <Lbignum+0x13>
+    23d0:	000d0a74 	andeq	r0, sp, r4, ror sl
+    23d4:	35345441 	ldrcc	r5, [r4, -#1089]!
+    23d8:	32314244 	eorccs	r4, r1, #1073741828	; 0x40000004
+    23dc:	00000a38 	andeq	r0, r0, r8, lsr sl
+    23e0:	35345441 	ldrcc	r5, [r4, -#1089]!
+    23e4:	34364244 	ldrcct	r4, [r6], -#580
+    23e8:	00000a32 	andeq	r0, r0, r2, lsr sl
+    23ec:	35345441 	ldrcc	r5, [r4, -#1089]!
+    23f0:	32334244 	eorccs	r4, r3, #1073741828	; 0x40000004
+    23f4:	00000a31 	andeq	r0, r0, r1, lsr sl
+    23f8:	35345441 	ldrcc	r5, [r4, -#1089]!
+    23fc:	36314244 	ldrcct	r4, [r1], -r4, asr #4
+    2400:	00000a31 	andeq	r0, r0, r1, lsr sl
+    2404:	61746144 	cmnvs	r4, r4, asr #2
+    2408:	73616c46 	cmnvc	r1, #17920	; 0x4600
+    240c:	00003a68 	andeq	r3, r0, r8, ror #20
+    2410:	656d6954 	strvsb	r6, [sp, -#2388]!
+    2414:	2074756f 	rsbcss	r7, r4, pc, ror #10
+    2418:	74697277 	strvcbt	r7, [r9], -#631
+    241c:	20676e69 	rsbcs	r6, r7, r9, ror #28
+    2420:	44206f74 	strmit	r6, [r0], -#3956
+    2424:	46617461 	strmibt	r7, [r1], -r1, ror #8
+    2428:	6873616c 	ldmvsda	r3!, {r2, r3, r5, r6, r8, sp, lr}^
+    242c:	0000000a 	andeq	r0, r0, sl
+    2430:	7374754f 	cmnvc	r4, #331350016	; 0x13c00000
+    2434:	20656469 	rsbcs	r6, r5, r9, ror #8
+    2438:	69617661 	stmvsdb	r1!, {r0, r5, r6, r9, sl, ip, sp, lr}^
+    243c:	6c62616c 	stfvse	f6, [r2], -#432
+    2440:	61442065 	cmpvs	r4, r5, rrx
+    2444:	6c466174 	mcrrvs	1, 7, r6, r6, cr4
+    2448:	0a687361 	beq	1a1f1d4 <_end+0x1a1cbf0>
+    244c:	00000000 	andeq	r0, r0, r0
+    2450:	656e6547 	strvsb	r6, [lr, -#1351]!
+    2454:	206c6172 	rsbcs	r6, ip, r2, ror r1
+    2458:	61746144 	cmnvs	r4, r4, asr #2
+    245c:	73616c46 	cmnvc	r1, #17920	; 0x4600
+    2460:	72502068 	subvcs	r2, r0, #104	; 0x68
+    2464:	6172676f 	cmnvs	r2, pc, ror #14
+    2468:	6e696d6d 	cdpvs	13, 6, cr6, cr9, cr13, {3}
+    246c:	72452067 	subvc	r2, r5, #103	; 0x67
+    2470:	0a726f72 	beq	1c9e240 <_end+0x1c9bc5c>
+    2474:	00000000 	andeq	r0, r0, r0
+    2478:	6e6b6e55 	mcrvs	14, 3, r6, cr11, cr5, {2}
+    247c:	206e776f 	rsbcs	r7, lr, pc, ror #14
+    2480:	65707954 	ldrvsb	r7, [r0, -#2388]!
+    2484:	20666f20 	rsbcs	r6, r6, r0, lsr #30
+    2488:	61746144 	cmnvs	r4, r4, asr #2
+    248c:	73616c46 	cmnvc	r1, #17920	; 0x4600
+    2490:	00000a68 	andeq	r0, r0, r8, ror #20
+    2494:	276e6143 	strcsb	r6, [lr, -r3, asr #2]!
+    2498:	72772074 	rsbvcs	r2, r7, #116	; 0x74
+    249c:	20657469 	rsbcs	r7, r5, r9, ror #8
+    24a0:	70206f74 	eorvc	r6, r0, r4, ror pc
+    24a4:	65746f72 	ldrvsb	r6, [r4, -#3954]!
+    24a8:	64657463 	strvsbt	r7, [r5], -#1123
+    24ac:	74614420 	strvcbt	r4, [r1], -#1056
+    24b0:	616c4661 	cmnvs	ip, r1, ror #12
+    24b4:	73206873 	teqvc	r0, #7536640	; 0x730000
+    24b8:	6f746365 	swivs	0x00746365
+    24bc:	000a7372 	andeq	r7, sl, r2, ror r3
+    24c0:	65736552 	ldrvsb	r6, [r3, -#1362]!
+    24c4:	6e697474 	mcrvs	4, 3, r7, cr9, cr4, {3}
+    24c8:	50432067 	subpl	r2, r3, r7, rrx
+    24cc:	2e2e2055 	mcrcs	0, 1, r2, cr14, cr5, {2}
+    24d0:	00000a2e 	andeq	r0, r0, lr, lsr #20
+    24d4:	65646e75 	strvsb	r6, [r4, -#3701]!
+    24d8:	656e6966 	strvsb	r6, [lr, -#2406]!
+    24dc:	6e692064 	cdpvs	0, 6, cr2, cr9, cr4, {3}
+    24e0:	75727473 	ldrvcb	r7, [r2, -#1139]!
+    24e4:	6f697463 	swivs	0x00697463
+    24e8:	00000a6e 	andeq	r0, r0, lr, ror #20
+    24ec:	74666f73 	strvcbt	r6, [r6], -#3955
+    24f0:	65726177 	ldrvsb	r6, [r2, -#375]!
+    24f4:	746e6920 	strvcbt	r6, [lr], -#2336
+    24f8:	75727265 	ldrvcb	r7, [r2, -#613]!
+    24fc:	000a7470 	andeq	r7, sl, r0, ror r4
+    2500:	66657270 	undefined
+    2504:	68637465 	stmvsda	r3!, {r0, r2, r5, r6, sl, ip, sp, lr}^
+    2508:	6f626120 	swivs	0x00626120
+    250c:	000a7472 	andeq	r7, sl, r2, ror r4
+    2510:	61746164 	cmnvs	r4, r4, ror #2
+    2514:	6f626120 	swivs	0x00626120
+    2518:	000a7472 	andeq	r7, sl, r2, ror r4
+    251c:	20746f6e 	rsbcss	r6, r4, lr, ror #30
+    2520:	64657375 	strvsbt	r7, [r5], -#885
+    2524:	0000000a 	andeq	r0, r0, sl
+    2528:	74736166 	ldrvcbt	r6, [r3], -#358
+    252c:	746e6920 	strvcbt	r6, [lr], -#2336
+    2530:	75727265 	ldrvcb	r7, [r2, -#613]!
+    2534:	72207470 	eorvc	r7, r0, #1879048192	; 0x70000000
+    2538:	65757165 	ldrvsb	r7, [r5, -#357]!
+    253c:	000a7473 	andeq	r7, sl, r3, ror r4
+    2540:	65746e69 	ldrvsb	r6, [r4, -#3689]!
+    2544:	70757272 	rsbvcs	r7, r5, r2, ror r2
+    2548:	65722074 	ldrvsb	r2, [r2, -#116]!
+    254c:	73657571 	cmnvc	r5, #473956352	; 0x1c400000
+    2550:	Address 0x2550 is out of bounds.
+
+Disassembly of section .data:
+
+00002554 <us>:
+    2554:	fffff200 	swinv	0x00fff200

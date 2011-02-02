@@ -1,0 +1,171 @@
+Post Processor Report
+OrCAD FILE: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.MAX
+Wed Jun 03 14:27:08 2009
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.TOP
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.TOP:
+---------------------------------------------------------
+D10:  0.0400 x 0.0500 RECTANGLE -----       4 Flashes
+D11:  0.0500 SQUARE --       0 Draws,       4 Flashes
+D12:  0.0500 x 0.0400 RECTANGLE -----       4 Flashes
+D13:  0.0394 x 0.0590 RECTANGLE -----      20 Flashes
+D14:  0.0236 x 0.0551 RECTANGLE -----      12 Flashes
+D15:  0.0551 x 0.0236 RECTANGLE -----      12 Flashes
+D16:  0.0472 ROUND  --       0 Draws,      20 Flashes
+D17:  0.0390 x 0.0272 RECTANGLE -----       5 Flashes
+D18:  0.0394 ROUND  --       0 Draws,      17 Flashes
+D19:  0.0157 ROUND  --     707 Draws,       0 Flashes
+D20:  0.0100 ROUND  --      19 Draws,       0 Flashes
+D21:  0.0079 ROUND  --     129 Draws,       0 Flashes
+D22:  0.0118 ROUND  --      12 Draws,       0 Flashes
+D23:  0.0080 ROUND  --       4 Draws,       0 Flashes
+---------------------------------------------------------
+ 14 D-Codes      -----     871 Draws,      98 Flashes
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.BOT
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.BOT:
+---------------------------------------------------------
+D21:  0.0079 ROUND  --      59 Draws,       0 Flashes
+D22:  0.0118 ROUND  --       7 Draws,       0 Flashes
+D24:  0.0500 x 0.0400 RECTANGLE -----       2 Flashes
+D25:  0.0472 ROUND  --       0 Draws,      20 Flashes
+D26:  0.0394 ROUND  --       0 Draws,      17 Flashes
+---------------------------------------------------------
+  5 D-Codes      -----      66 Draws,      39 Flashes
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.SMT
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.SMT:
+---------------------------------------------------------
+D24:  0.0500 x 0.0400 RECTANGLE -----       4 Flashes
+D26:  0.0394 ROUND  --       0 Draws,      17 Flashes
+D27:  0.0400 x 0.0500 RECTANGLE -----       4 Flashes
+D28:  0.0500 SQUARE --       0 Draws,       4 Flashes
+D29:  0.0394 x 0.0590 RECTANGLE -----      20 Flashes
+D30:  0.0315 x 0.0630 RECTANGLE -----      12 Flashes
+D31:  0.0630 x 0.0315 RECTANGLE -----      12 Flashes
+D32:  0.0551 ROUND  --       0 Draws,      20 Flashes
+---------------------------------------------------------
+  8 D-Codes      -----       0 Draws,      93 Flashes
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.SMB
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.SMB:
+---------------------------------------------------------
+D24:  0.0500 x 0.0400 RECTANGLE -----       2 Flashes
+D26:  0.0394 ROUND  --       0 Draws,      17 Flashes
+D32:  0.0551 ROUND  --       0 Draws,      20 Flashes
+---------------------------------------------------------
+  3 D-Codes      -----       0 Draws,      39 Flashes
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.SST
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.SST:
+---------------------------------------------------------
+D19:  0.0157 ROUND  --       7 Draws,       0 Flashes
+D20:  0.0100 ROUND  --      45 Draws,       0 Flashes
+D21:  0.0079 ROUND  --      21 Draws,       0 Flashes
+D33:  0.0010 ROUND  --      53 Draws,       0 Flashes
+D34:  0.0060 ROUND  --      21 Draws,       0 Flashes
+D35:  0.0020 ROUND  --       4 Draws,       0 Flashes
+D36:  0.0059 ROUND  --      14 Draws,       0 Flashes
+---------------------------------------------------------
+  7 D-Codes      -----     165 Draws,       0 Flashes
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.SSB
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.SSB:
+---------------------------------------------------------
+D33:  0.0010 ROUND  --      13 Draws,       0 Flashes
+---------------------------------------------------------
+  1 D-Codes      -----      13 Draws,       0 Flashes
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.AST
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.AST:
+---------------------------------------------------------
+D19:  0.0157 ROUND  --       4 Draws,       0 Flashes
+D20:  0.0100 ROUND  --      90 Draws,       0 Flashes
+D24:  0.0500 x 0.0400 RECTANGLE -----       4 Flashes
+D27:  0.0400 x 0.0500 RECTANGLE -----       4 Flashes
+D28:  0.0500 SQUARE --       0 Draws,       4 Flashes
+D34:  0.0060 ROUND  --     227 Draws,       0 Flashes
+---------------------------------------------------------
+  6 D-Codes      -----     321 Draws,      12 Flashes
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.DRD
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.DRD:
+---------------------------------------------------------
+D19:  0.0157 ROUND  --       4 Draws,       0 Flashes
+D20:  0.0100 ROUND  --     414 Draws,       0 Flashes
+---------------------------------------------------------
+  2 D-Codes      -----     418 Draws,       0 Flashes
+
+*********************************************************
+
+Output file: C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.FAB
+
+Aperture totals for C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.FAB:
+---------------------------------------------------------
+D19:  0.0157 ROUND  --       4 Draws,       0 Flashes
+D37:  0.0236 ROUND  --       0 Draws,      17 Flashes
+---------------------------------------------------------
+  2 D-Codes      -----       4 Draws,      17 Flashes
+
+
+*********************************************************
+
+Aperture totals for entire project:
+---------------------------------------------------------
+D10:  0.0400 x 0.0500 RECTANGLE -----       4 Flashes
+D11:  0.0500 SQUARE --       0 Draws,       4 Flashes
+D12:  0.0500 x 0.0400 RECTANGLE -----       4 Flashes
+D13:  0.0394 x 0.0590 RECTANGLE -----      20 Flashes
+D14:  0.0236 x 0.0551 RECTANGLE -----      12 Flashes
+D15:  0.0551 x 0.0236 RECTANGLE -----      12 Flashes
+D16:  0.0472 ROUND  --       0 Draws,      20 Flashes
+D17:  0.0390 x 0.0272 RECTANGLE -----       5 Flashes
+D18:  0.0394 ROUND  --       0 Draws,      17 Flashes
+D19:  0.0157 ROUND  --     726 Draws,       0 Flashes
+D20:  0.0100 ROUND  --     568 Draws,       0 Flashes
+D21:  0.0079 ROUND  --     209 Draws,       0 Flashes
+D22:  0.0118 ROUND  --      19 Draws,       0 Flashes
+D23:  0.0080 ROUND  --       4 Draws,       0 Flashes
+D24:  0.0500 x 0.0400 RECTANGLE -----      12 Flashes
+D25:  0.0472 ROUND  --       0 Draws,      20 Flashes
+D26:  0.0394 ROUND  --       0 Draws,      51 Flashes
+D27:  0.0400 x 0.0500 RECTANGLE -----       8 Flashes
+D28:  0.0500 SQUARE --       0 Draws,       8 Flashes
+D29:  0.0394 x 0.0590 RECTANGLE -----      20 Flashes
+D30:  0.0315 x 0.0630 RECTANGLE -----      12 Flashes
+D31:  0.0630 x 0.0315 RECTANGLE -----      12 Flashes
+D32:  0.0551 ROUND  --       0 Draws,      40 Flashes
+D33:  0.0010 ROUND  --      66 Draws,       0 Flashes
+D34:  0.0060 ROUND  --     248 Draws,       0 Flashes
+D35:  0.0020 ROUND  --       4 Draws,       0 Flashes
+D36:  0.0059 ROUND  --      14 Draws,       0 Flashes
+D37:  0.0236 ROUND  --       0 Draws,      17 Flashes
+---------------------------------------------------------
+ 28 D-Codes      -----    1858 Draws,     298 Flashes
+
+
+No warnings or errors.

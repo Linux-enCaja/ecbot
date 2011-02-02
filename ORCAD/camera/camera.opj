@@ -1,0 +1,49 @@
+(ExpressProject "camera"
+  (ProjectVersion "19981106")
+  (ProjectType "PCB")
+  (Folder "Design Resources"
+    (Folder "Library"
+      (File ".\kodak.olb"
+        (Type "Schematic Library")))
+    (NoModify)
+    (File ".\camera.dsn"
+      (Type "Schematic Design"))
+    (BuildFileAddedOrDeleted "x")
+    (CompileFileAddedOrDeleted "x")
+    (Netlist_TAB "3")
+    (LAYOUT_Netlist_File "CAMERA.MNL")
+    (LAYOUT_PCB_Footprint "{PCB Footprint}")
+    (TRUE)
+    (LAYOUT_Units "0"))
+  (Folder "Outputs"
+    (File ".\camera.mnl"
+      (Type "LAYOUT Netlist File")))
+  (Folder "Referenced Projects")
+  (PartMRUSelector
+    ("GND_FIELD SIGNAL"
+      (LibraryName "C:\CADENCE\SPB_15.5\TOOLS\CAPTURE\LIBRARY\CAPSYM.OLB")
+      (DeviceIndex "0"))
+    (VCC_CIRCLE
+      (LibraryName "C:\CADENCE\SPB_15.5\TOOLS\CAPTURE\LIBRARY\CAPSYM.OLB")
+      (DeviceIndex "0"))
+    (KAC9628
+      (FullPartName "KAC9628.Normal")
+      (LibraryName "C:\CAIN\ECBOT\V3\KODAK.OLB")
+      (DeviceIndex "0")))
+  (LastUsedLibraryBrowseDirectory "C:\cain\ECBOT\V3")
+  (GlobalState
+    (FileView
+      (Path "Design Resources")
+      (Path "Design Resources" "C:\cainPCB\ECBOT\V5\camera\camera.dsn")
+      (Path "Design Resources" "C:\cainPCB\ECBOT\V5\camera\camera.dsn"
+         "SCHEMATIC1")
+      (Path "Design Resources" "Library")
+      (Path "Outputs")
+      (Select "Design Resources" "C:\cainPCB\ECBOT\V5\camera\camera.dsn"
+         "SCHEMATIC1" "IMAGE SENSOR"))
+    (HierarchyView)
+    (Doc
+      (Type "COrCapturePMDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -4 -23 0 200 0 368"))
+      (Tab 0))))

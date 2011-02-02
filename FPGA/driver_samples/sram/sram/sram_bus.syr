@@ -1,0 +1,501 @@
+Release 9.2i - xst J.36
+Copyright (c) 1995-2007 Xilinx, Inc.  All rights reserved.
+--> 
+Parameter TMPDIR set to ./xst/projnav.tmp
+CPU : 0.00 / 0.07 s | Elapsed : 0.00 / 0.00 s
+ 
+--> 
+Parameter xsthdpdir set to ./xst
+CPU : 0.00 / 0.07 s | Elapsed : 0.00 / 0.00 s
+ 
+--> 
+Reading design: sram_bus.prj
+
+TABLE OF CONTENTS
+  1) Synthesis Options Summary
+  2) HDL Compilation
+  3) Design Hierarchy Analysis
+  4) HDL Analysis
+  5) HDL Synthesis
+     5.1) HDL Synthesis Report
+  6) Advanced HDL Synthesis
+     6.1) Advanced HDL Synthesis Report
+  7) Low Level Synthesis
+  8) Partition Report
+  9) Final Report
+     9.1) Device utilization summary
+     9.2) Partition Resource Summary
+     9.3) TIMING REPORT
+
+
+=========================================================================
+*                      Synthesis Options Summary                        *
+=========================================================================
+---- Source Parameters
+Input File Name                    : "sram_bus.prj"
+Input Format                       : mixed
+Ignore Synthesis Constraint File   : NO
+
+---- Target Parameters
+Output File Name                   : "sram_bus"
+Output Format                      : NGC
+Target Device                      : xc3s400-4-pq208
+
+---- Source Options
+Top Module Name                    : sram_bus
+Automatic FSM Extraction           : YES
+FSM Encoding Algorithm             : Auto
+Safe Implementation                : No
+FSM Style                          : lut
+RAM Extraction                     : Yes
+RAM Style                          : Auto
+ROM Extraction                     : Yes
+Mux Style                          : Auto
+Decoder Extraction                 : YES
+Priority Encoder Extraction        : YES
+Shift Register Extraction          : YES
+Logical Shifter Extraction         : YES
+XOR Collapsing                     : YES
+ROM Style                          : Auto
+Mux Extraction                     : YES
+Resource Sharing                   : YES
+Asynchronous To Synchronous        : NO
+Multiplier Style                   : auto
+Automatic Register Balancing       : No
+
+---- Target Options
+Add IO Buffers                     : YES
+Global Maximum Fanout              : 500
+Add Generic Clock Buffer(BUFG)     : 8
+Register Duplication               : YES
+Slice Packing                      : YES
+Optimize Instantiated Primitives   : NO
+Use Clock Enable                   : Yes
+Use Synchronous Set                : Yes
+Use Synchronous Reset              : Yes
+Pack IO Registers into IOBs        : auto
+Equivalent register Removal        : YES
+
+---- General Options
+Optimization Goal                  : Speed
+Optimization Effort                : 1
+Library Search Order               : sram_bus.lso
+Keep Hierarchy                     : NO
+RTL Output                         : Yes
+Global Optimization                : AllClockNets
+Read Cores                         : YES
+Write Timing Constraints           : NO
+Cross Clock Analysis               : NO
+Hierarchy Separator                : /
+Bus Delimiter                      : <>
+Case Specifier                     : maintain
+Slice Utilization Ratio            : 100
+BRAM Utilization Ratio             : 100
+Verilog 2001                       : YES
+Auto BRAM Packing                  : NO
+Slice Utilization Ratio Delta      : 5
+
+=========================================================================
+
+
+=========================================================================
+*                          HDL Compilation                              *
+=========================================================================
+Compiling verilog file "sram_bus.v" in library work
+Module <sram_bus> compiled
+No errors in compilation
+Analysis of file <"sram_bus.prj"> succeeded.
+ 
+
+=========================================================================
+*                     Design Hierarchy Analysis                         *
+=========================================================================
+Analyzing hierarchy for module <sram_bus> in library <work> with parameters.
+	B = "00000000000000000000000000001111"
+
+
+=========================================================================
+*                            HDL Analysis                               *
+=========================================================================
+Analyzing top module <sram_bus>.
+	B = 32'sb00000000000000000000000000001111
+Module <sram_bus> is correct for synthesis.
+ 
+    Set user-defined property "INIT_04 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_3B =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_3C =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_05 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INITP_03 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_15 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_16 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_13 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_14 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_29 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_2A =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_0B =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_0E =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_3F =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "SRVAL =  00000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_03 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_27 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_28 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_0F =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_10 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_0A =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_25 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_26 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_11 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_12 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_06 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_2D =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_2E =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_23 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_24 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INITP_05 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_39 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_3A =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_21 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_22 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INITP_04 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_1F =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_20 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INITP_06 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INITP_01 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_33 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_34 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_19 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_1A =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INITP_07 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INITP_00 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_2F =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_30 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_17 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_18 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_00 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT =  00000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_35 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_36 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_1D =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_1E =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_01 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_31 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_32 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_1B =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_1C =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_02 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "WRITE_MODE =  WRITE_FIRST" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_09 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INITP_02 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_07 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_08 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_0D =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_0C =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_3D =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_3E =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_2B =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_2C =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_37 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+    Set user-defined property "INIT_38 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <ba0> in unit <sram_bus>.
+
+=========================================================================
+*                           HDL Synthesis                               *
+=========================================================================
+
+Performing bidirectional port resolution...
+
+Synthesizing Unit <sram_bus>.
+    Related source file is "sram_bus.v".
+    Found 16-bit tristate buffer for signal <sram_data>.
+    Found 10-bit register for signal <buffer_addr>.
+    Found 16-bit register for signal <buffer_data>.
+    Found 33-bit up counter for signal <counter>.
+    Found 1-bit register for signal <sncs>.
+    Found 1-bit register for signal <snwe>.
+    Found 1-bit register for signal <w_st>.
+    Found 16-bit register for signal <wdBus>.
+    Found 1-bit register for signal <we>.
+    Summary:
+	inferred   1 Counter(s).
+	inferred  46 D-type flip-flop(s).
+	inferred  16 Tristate(s).
+Unit <sram_bus> synthesized.
+
+
+=========================================================================
+HDL Synthesis Report
+
+Macro Statistics
+# Counters                                             : 1
+ 33-bit up counter                                     : 1
+# Registers                                            : 7
+ 1-bit register                                        : 4
+ 10-bit register                                       : 1
+ 16-bit register                                       : 2
+# Tristates                                            : 1
+ 16-bit tristate buffer                                : 1
+
+=========================================================================
+
+=========================================================================
+*                       Advanced HDL Synthesis                          *
+=========================================================================
+
+Loading device for application Rf_Device from file '3s400.nph' in environment /home/cad/Xilinx.
+
+=========================================================================
+Advanced HDL Synthesis Report
+
+Macro Statistics
+# Counters                                             : 1
+ 33-bit up counter                                     : 1
+# Registers                                            : 46
+ Flip-Flops                                            : 46
+
+=========================================================================
+
+=========================================================================
+*                         Low Level Synthesis                           *
+=========================================================================
+WARNING:Xst:2677 - Node <counter_25> of sequential type is unconnected in block <sram_bus>.
+WARNING:Xst:2677 - Node <counter_26> of sequential type is unconnected in block <sram_bus>.
+WARNING:Xst:2677 - Node <counter_27> of sequential type is unconnected in block <sram_bus>.
+WARNING:Xst:2677 - Node <counter_28> of sequential type is unconnected in block <sram_bus>.
+WARNING:Xst:2677 - Node <counter_29> of sequential type is unconnected in block <sram_bus>.
+WARNING:Xst:2677 - Node <counter_30> of sequential type is unconnected in block <sram_bus>.
+WARNING:Xst:2677 - Node <counter_31> of sequential type is unconnected in block <sram_bus>.
+WARNING:Xst:2677 - Node <counter_32> of sequential type is unconnected in block <sram_bus>.
+
+Optimizing unit <sram_bus> ...
+
+Mapping all equations...
+Building and optimizing final netlist ...
+Found area constraint ratio of 100 (+ 5) on block sram_bus, actual ratio is 1.
+
+Final Macro Processing ...
+
+=========================================================================
+Final Register Report
+
+Macro Statistics
+# Registers                                            : 71
+ Flip-Flops                                            : 71
+
+=========================================================================
+
+=========================================================================
+*                          Partition Report                             *
+=========================================================================
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+=========================================================================
+*                            Final Report                               *
+=========================================================================
+Final Results
+RTL Top Level Output File Name     : sram_bus.ngr
+Top Level Output File Name         : sram_bus
+Output Format                      : NGC
+Optimization Goal                  : Speed
+Keep Hierarchy                     : NO
+
+Design Statistics
+# IOs                              : 32
+
+Cell Usage :
+# BELS                             : 79
+#      GND                         : 1
+#      INV                         : 2
+#      LUT1                        : 24
+#      LUT2                        : 1
+#      LUT3                        : 2
+#      MUXCY                       : 24
+#      VCC                         : 1
+#      XORCY                       : 24
+# FlipFlops/Latches                : 71
+#      FD_1                        : 28
+#      FDR                         : 43
+# RAMS                             : 1
+#      RAMB16_S18                  : 1
+# Clock Buffers                    : 1
+#      BUFGP                       : 1
+# IO Buffers                       : 31
+#      IBUF                        : 14
+#      IOBUF                       : 16
+#      OBUF                        : 1
+=========================================================================
+
+Device utilization summary:
+---------------------------
+
+Selected Device : 3s400pq208-4 
+
+ Number of Slices:                      40  out of   3584     1%  
+ Number of Slice Flip Flops:            61  out of   7168     0%  
+ Number of 4 input LUTs:                29  out of   7168     0%  
+ Number of IOs:                         32
+ Number of bonded IOBs:                 32  out of    141    22%  
+    IOB Flip Flops:                     10
+ Number of BRAMs:                        1  out of     16     6%  
+ Number of GCLKs:                        1  out of      8    12%  
+
+---------------------------
+Partition Resource Summary:
+---------------------------
+
+  No Partitions were found in this design.
+
+---------------------------
+
+
+=========================================================================
+TIMING REPORT
+
+NOTE: THESE TIMING NUMBERS ARE ONLY A SYNTHESIS ESTIMATE.
+      FOR ACCURATE TIMING INFORMATION PLEASE REFER TO THE TRACE REPORT
+      GENERATED AFTER PLACE-and-ROUTE.
+
+Clock Information:
+------------------
+-----------------------------------+------------------------+-------+
+Clock Signal                       | Clock buffer(FF name)  | Load  |
+-----------------------------------+------------------------+-------+
+clk                                | BUFGP                  | 71    |
+-----------------------------------+------------------------+-------+
+
+Asynchronous Control Signals Information:
+----------------------------------------
+No asynchronous control signals found in this design
+
+Timing Summary:
+---------------
+Speed Grade: -4
+
+   Minimum period: 5.426ns (Maximum Frequency: 184.298MHz)
+   Minimum input arrival time before clock: 3.763ns
+   Maximum output required time after clock: 7.241ns
+   Maximum combinational path delay: 9.712ns
+
+Timing Detail:
+--------------
+All values displayed in nanoseconds (ns)
+
+=========================================================================
+Timing constraint: Default period analysis for Clock 'clk'
+  Clock period: 5.426ns (frequency: 184.298MHz)
+  Total number of paths / destination ports: 346 / 43
+-------------------------------------------------------------------------
+Delay:               5.426ns (Levels of Logic = 25)
+  Source:            counter_1 (FF)
+  Destination:       counter_24 (FF)
+  Source Clock:      clk rising
+  Destination Clock: clk rising
+
+  Data Path: counter_1 to counter_24
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDR:C->Q              1   0.720   1.140  counter_1 (counter_1)
+     LUT1:I0->O            1   0.551   0.000  Mcount_counter_cy<1>_rt (Mcount_counter_cy<1>_rt)
+     MUXCY:S->O            1   0.500   0.000  Mcount_counter_cy<1> (Mcount_counter_cy<1>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<2> (Mcount_counter_cy<2>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<3> (Mcount_counter_cy<3>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<4> (Mcount_counter_cy<4>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<5> (Mcount_counter_cy<5>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<6> (Mcount_counter_cy<6>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<7> (Mcount_counter_cy<7>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<8> (Mcount_counter_cy<8>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<9> (Mcount_counter_cy<9>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<10> (Mcount_counter_cy<10>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<11> (Mcount_counter_cy<11>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<12> (Mcount_counter_cy<12>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<13> (Mcount_counter_cy<13>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<14> (Mcount_counter_cy<14>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<15> (Mcount_counter_cy<15>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<16> (Mcount_counter_cy<16>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<17> (Mcount_counter_cy<17>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<18> (Mcount_counter_cy<18>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<19> (Mcount_counter_cy<19>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<20> (Mcount_counter_cy<20>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<21> (Mcount_counter_cy<21>)
+     MUXCY:CI->O           1   0.064   0.000  Mcount_counter_cy<22> (Mcount_counter_cy<22>)
+     MUXCY:CI->O           0   0.064   0.000  Mcount_counter_cy<23> (Mcount_counter_cy<23>)
+     XORCY:CI->O           1   0.904   0.000  Mcount_counter_xor<24> (Result<24>)
+     FDR:D                     0.203          counter_24
+    ----------------------------------------
+    Total                      5.426ns (4.286ns logic, 1.140ns route)
+                                       (79.0% logic, 21.0% route)
+
+=========================================================================
+Timing constraint: Default OFFSET IN BEFORE for Clock 'clk'
+  Total number of paths / destination ports: 71 / 71
+-------------------------------------------------------------------------
+Offset:              3.763ns (Levels of Logic = 1)
+  Source:            reset (PAD)
+  Destination:       w_st (FF)
+  Destination Clock: clk rising
+
+  Data Path: reset to w_st
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O            43   0.821   1.916  reset_IBUF (reset_IBUF)
+     FDR:R                     1.026          w_st
+    ----------------------------------------
+    Total                      3.763ns (1.847ns logic, 1.916ns route)
+                                       (49.1% logic, 50.9% route)
+
+=========================================================================
+Timing constraint: Default OFFSET OUT AFTER for Clock 'clk'
+  Total number of paths / destination ports: 1 / 1
+-------------------------------------------------------------------------
+Offset:              7.241ns (Levels of Logic = 1)
+  Source:            counter_24 (FF)
+  Destination:       led (PAD)
+  Source Clock:      clk rising
+
+  Data Path: counter_24 to led
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDR:C->Q              2   0.720   0.877  counter_24 (counter_24)
+     OBUF:I->O                 5.644          led_OBUF (led)
+    ----------------------------------------
+    Total                      7.241ns (6.364ns logic, 0.877ns route)
+                                       (87.9% logic, 12.1% route)
+
+=========================================================================
+Timing constraint: Default path analysis
+  Total number of paths / destination ports: 48 / 16
+-------------------------------------------------------------------------
+Delay:               9.712ns (Levels of Logic = 3)
+  Source:            nwe (PAD)
+  Destination:       sram_data<15> (PAD)
+
+  Data Path: nwe to sram_data<15>
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O             2   0.821   1.216  nwe_IBUF (nwe_IBUF)
+     LUT3:I0->O           16   0.551   1.237  T1 (T)
+     IOBUF:T->IO               5.887          sram_data_15_IOBUF (sram_data<15>)
+    ----------------------------------------
+    Total                      9.712ns (7.259ns logic, 2.453ns route)
+                                       (74.7% logic, 25.3% route)
+
+=========================================================================
+CPU : 5.86 / 5.95 s | Elapsed : 6.00 / 6.00 s
+ 
+--> 
+
+
+Total memory usage is 119416 kilobytes
+
+Number of errors   :    0 (   0 filtered)
+Number of warnings :    8 (   0 filtered)
+Number of infos    :    0 (   0 filtered)
+

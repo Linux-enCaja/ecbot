@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IMPORTANT: This is an internal file that has been generated
+     by the Xilinx ISE software.  Any direct editing or
+     changes made to this file may result in unpredictable
+     behavior or data corruption.  It is strongly advised that
+     users do not edit the contents of this file. -->
+<messages>
+<msg type="warning" file="Xst" num="2677" delta="unknown" >Node &lt;<arg fmt="%s" index="1">counter_25</arg>&gt; of sequential type is unconnected in block &lt;<arg fmt="%s" index="2">sram_bus</arg>&gt;.
+</msg>
+
+<msg type="warning" file="Xst" num="2677" delta="unknown" >Node &lt;<arg fmt="%s" index="1">counter_26</arg>&gt; of sequential type is unconnected in block &lt;<arg fmt="%s" index="2">sram_bus</arg>&gt;.
+</msg>
+
+<msg type="warning" file="Xst" num="2677" delta="unknown" >Node &lt;<arg fmt="%s" index="1">counter_27</arg>&gt; of sequential type is unconnected in block &lt;<arg fmt="%s" index="2">sram_bus</arg>&gt;.
+</msg>
+
+<msg type="warning" file="Xst" num="2677" delta="unknown" >Node &lt;<arg fmt="%s" index="1">counter_28</arg>&gt; of sequential type is unconnected in block &lt;<arg fmt="%s" index="2">sram_bus</arg>&gt;.
+</msg>
+
+<msg type="warning" file="Xst" num="2677" delta="unknown" >Node &lt;<arg fmt="%s" index="1">counter_29</arg>&gt; of sequential type is unconnected in block &lt;<arg fmt="%s" index="2">sram_bus</arg>&gt;.
+</msg>
+
+<msg type="warning" file="Xst" num="2677" delta="unknown" >Node &lt;<arg fmt="%s" index="1">counter_30</arg>&gt; of sequential type is unconnected in block &lt;<arg fmt="%s" index="2">sram_bus</arg>&gt;.
+</msg>
+
+<msg type="warning" file="Xst" num="2677" delta="unknown" >Node &lt;<arg fmt="%s" index="1">counter_31</arg>&gt; of sequential type is unconnected in block &lt;<arg fmt="%s" index="2">sram_bus</arg>&gt;.
+</msg>
+
+<msg type="warning" file="Xst" num="2677" delta="unknown" >Node &lt;<arg fmt="%s" index="1">counter_32</arg>&gt; of sequential type is unconnected in block &lt;<arg fmt="%s" index="2">sram_bus</arg>&gt;.
+</msg>
+
+</messages>
+

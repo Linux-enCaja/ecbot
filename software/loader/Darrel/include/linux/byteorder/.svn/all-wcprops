@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/include/linux/byteorder
+END
+little_endian.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/include/linux/byteorder/little_endian.h
+END
+generic.h
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/include/linux/byteorder/generic.h
+END
+swab.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/include/linux/byteorder/swab.h
+END
+big_endian.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/!svn/ver/109/src/emqbit/ECB_AT91_V2/darrell-loader/include/linux/byteorder/big_endian.h
+END

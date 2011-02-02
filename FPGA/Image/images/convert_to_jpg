@@ -1,0 +1,9 @@
+  echo "running test"
+  cont=0
+  while [ $cont -le 100 ]
+  do
+    echo $cont
+      convert -depth 8 -size 128x96 rgb:test$cont.bin image$cont.png
+    cont=`expr $cont + 1`
+  done
+  exit 1

@@ -1,0 +1,300 @@
+`timescale 1ns / 1ps
+`include "cap_params.v"
+module capture_block(
+    // Control signals
+    clk, reset, c_trigg, c_done,
+    // Memory Interface
+    mem_data, mem_addr, mem_we, crst,
+   // Camera Interface
+    mclk, vclk, hsync, vsync, pixel_data
+);
+  parameter  DW   = 15;
+  parameter  AW   = 9;
+
+  input clk, reset;
+
+  // Capture triggering
+  input  c_trigg;
+  output c_done;
+  output mem_we;
+  output reg [AW:0] mem_addr = 0;
+  output reg [DW:0] mem_data = 0;
+  output reg mclk;
+	 
+  // Data inputs
+  input vclk;
+  input hsync;
+  input vsync;
+  input [9:0] pixel_data;
+
+
+
+  // Data Outputs 
+  output crst; 
+  // First we convert all external async signals into our own domain
+  reg hs_sync;
+  reg vs_sync;
+  reg vclk_sync;
+  reg reset_sync;
+  reg c_trigg_sync;
+
+  wire inc_mem;
+  wire rst_mem;
+  wire load_mem;
+  wire togg_row;
+  wire e_mclk;
+  wire crst;
+  wire c_done;
+  wire mem_we;
+
+  // state machine internal signals
+  reg [9:0] pixdata_sync;
+
+always @(posedge clk) begin
+  hs_sync      <= hsync;
+  vs_sync      <= vsync;
+  vclk_sync    <= vclk;
+  pixdata_sync <= pixel_data;
+  reset_sync   <= reset;
+  c_trigg_sync <= c_trigg;
+end
+
+  // General purpose Registers
+  reg [9:0]  pixel_count;     // Current Pixel captured or processed.
+  reg row_count;       // Current row.
+  reg [11:0] mem_factor;
+
+   parameter init       = 4'b0000;
+   parameter start      = 4'b0001;
+   parameter new_row    = 4'b0010;
+   parameter new_pixel  = 4'b0011;
+   parameter wr_bytes   = 4'b0100;
+   parameter wr_mem     = 4'b0110;
+   parameter up_mem     = 4'b0111;
+   parameter resume     = 4'b0101;
+   parameter resume2    = 4'b1101;
+   parameter inc_row    = 4'b1110;
+   reg [3:0] state = init;
+
+   //load_mem ; crst ; inc_mem ; rst_mem; mem_we; e_mclk; c_done; togg_row;
+   parameter RESET_ALL = 8'b00011000;
+   parameter RESET_MEM = 8'b01011000;
+   parameter ENAB_MCLK = 8'b01001100;
+   parameter LD_MEM    = 8'b11001100;
+   parameter WRITE_MEM = 8'b01000100;
+   parameter INCR_MEM  = 8'b01100100;
+   parameter DONE_ROW  = 8'b01011110;
+   parameter DIS_MCLK  = 8'b01011010;
+   parameter INCR_ROW  = 8'b01011101;
+   reg [7:0] dp_ctrl;
+
+always@(negedge clk or posedge reset_sync) begin
+  if (reset_sync) begin
+    state     <= init;
+    dp_ctrl   <= RESET_ALL;
+  end
+  else
+    case (state)
+      init : begin            // wait for new frame request from processor
+        if (~c_trigg_sync) begin
+          state   <= init;
+          dp_ctrl <= RESET_ALL;
+        end
+        else begin
+          state   <= start;
+          dp_ctrl <= RESET_MEM;
+        end
+      end
+
+      start : begin
+        if (vs_sync & hs_sync) begin     // wait for new frame (vsync = 1)
+          state     <= new_row;
+        end
+        else begin 
+          state  <= start;
+        end
+        dp_ctrl <= ENAB_MCLK;
+      end
+
+    new_row : begin
+      if (vclk_sync & vs_sync) begin
+        state   <= new_pixel;
+      end
+      else begin
+        state   <= new_row;
+      end
+      dp_ctrl <= ENAB_MCLK;
+    end
+
+    new_pixel : begin
+      if (vs_sync) begin
+        if (hs_sync) begin
+          if(~vclk_sync) begin
+            state  <= wr_bytes;
+          end
+          else begin
+            state  <= new_pixel;
+          end
+        end
+        else begin
+          state  <= resume;
+        end
+      end
+      else begin
+        state  <= init;
+      end
+      dp_ctrl <= ENAB_MCLK;
+    end
+
+    wr_bytes : begin
+      state    <= wr_mem;
+      dp_ctrl  <= LD_MEM;
+    end
+
+    wr_mem : begin
+      state    <= up_mem;
+      dp_ctrl  <= WRITE_MEM;
+    end
+
+    up_mem : begin
+      state    <= new_row;
+      dp_ctrl  <= INCR_MEM;
+    end
+
+    resume : begin
+      if(~row_count) begin                         //First row
+        dp_ctrl <= DONE_ROW;
+        state   <= inc_row;
+      end
+      else begin                                  //Second row 
+        if (c_trigg_sync) begin
+          dp_ctrl <= DONE_ROW;
+          state   <= inc_row;
+        end
+        else begin
+          dp_ctrl <= DIS_MCLK;
+          state   <= resume;
+        end
+      end
+    end
+
+    inc_row : begin
+      state    <= resume2;
+      dp_ctrl  <= INCR_ROW;
+    end
+
+    resume2 : begin
+      if(hs_sync) begin
+        state   <= new_row;
+      end
+      else  begin
+        state   <= resume2;
+      end
+      dp_ctrl <= ENAB_MCLK;
+    end
+
+  endcase
+end  // end always
+
+assign {load_mem, crst, inc_mem, rst_mem, mem_we, e_mclk, c_done, togg_row} = dp_ctrl;
+assign crst = dp_ctrl[6];
+
+
+// 
+//   0 ..............................663  pixel_count
+// 0  |G|R|G|R|G|R|G|R|G|R|G|R|G|R|G|R|G|R    G0 = 2*N, R = 2*N + 1  row_count[0]=0  0 <= N <= 331
+// .  |B|G|B|G|B|G|B|G|B|G|B|G|B|G|B|G|B|G    B =  2*N, G1= 2*N + 1  row_count[0]=1  0 <= N <= 331 
+// .
+// .
+// 503 row_count
+// ===============================================================================================
+//  0 .............................331       (pixel_count >> 1)*3 + 331*row_count[0]
+// 0 |R|G|B|R|G|B|R|G|B|R|G|B|R|G|B|R|G|B    R = 3*N, G = 3*N + 1, B = 3*N + 2      0 <= N <= 331 
+// .
+// .
+// .
+// 251
+
+always @(posedge clk)
+begin
+    if(reset_sync | rst_mem) begin
+      pixel_count = 0;
+    end
+    else begin
+      if(inc_mem) begin
+       pixel_count = pixel_count + 1;
+      end
+    end
+end
+
+always @(posedge clk)
+begin
+    if(reset_sync) begin
+      row_count = 0;
+    end
+    else begin
+      if(togg_row) begin
+       row_count = ~row_count;
+      end
+    end
+end
+
+
+always @(row_count or pixel_count or mem_factor) begin
+
+//      if(~row_count[0])        // first row Capture G0 & R
+//        if(~pixel_count[0])          // G0
+//        else                         // R
+//      else                     // second row Capture B & G1
+//        if(~pixel_count[0])          // B
+//        else                      // G1
+
+   case ({row_count, pixel_count[0]})
+     2'b00: mem_factor = 0;
+     2'b01: mem_factor = 1;
+     2'b10: mem_factor = 332;
+     2'b11: mem_factor = 333;
+   endcase
+
+   mem_addr = (pixel_count[8:1]*3) + mem_factor;
+
+end
+
+    // byte to word pixel register
+always @(posedge clk)
+begin
+  if(reset_sync)
+    mem_data <= 0;
+  else begin
+    if(load_mem) begin
+      mem_data[9:0] <= pixdata_sync;
+    end
+  end
+end
+
+    // MCLK generator
+  reg [7:0]  mclk_counter;
+always @(posedge clk)
+begin
+  if(reset_sync) begin
+    mclk_counter <= {7{1'b0}};
+    mclk         <= 0;
+  end
+  else begin
+    if(e_mclk) begin
+      mclk_counter  <= mclk_counter +1;
+      if(mclk_counter <= 1)
+        mclk          <= 0;
+      if((mclk_counter > 1) & (mclk_counter <= 10))
+        mclk          <= 1;
+      if(mclk_counter > 2)
+        mclk_counter  <= {7{1'b0}};
+    end
+    else
+      mclk <= 0;
+  end
+end
+endmodule
+
+
+

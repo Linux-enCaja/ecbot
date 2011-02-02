@@ -1,0 +1,86 @@
+m255
+13
+cModel Technology
+d/home/cain/Embedded/AT91/work/ecbot/FPGA/ecbot/new_logic/simulation
+vcamera_TB_v
+I?G7]PS>@949=ACzN6A7W@2
+VQH8OQ`[EOOS`98N[28O6G2
+d/home/cain/Embedded/AT91/work/ECBOT/FPGA/ecbot/new_logic/simulation
+w1244948881
+F../ecbot_TB.v
+L0 3
+OE;L;6.0d;29
+r1
+31
+o+acc
+ncamera_@t@b_v
+vcapture_block
+IVneOd1oY1f0XZMb_lMF:V0
+V:`z=I3Y[8SmG[Dgd[nQob1
+d/home/cain/Embedded/AT91/work/ECBOT/FPGA/ecbot/new_logic/simulation
+w1245272436
+F../capture_block.v
+L0 3
+OE;L;6.0d;29
+r1
+31
+o+acc
+vDBUSMUX
+IC?V5cRX[^P??:XE8?A;k>0
+Vo:::gJkX69]m9^a41TnGQ3
+d/home/cain/Embedded/AT91/work/ECBOT/FPGA/ecbot/new_logic/simulation
+w1244910172
+F../dbusmux.v
+L0 3
+OE;L;6.0d;29
+r1
+31
+o+acc
+n@d@b@u@s@m@u@x
+vECBot
+Ia9SfD<TBYcIfT1XL>zNB@0
+VDoAzFDYXj]>W9PQ>J@me60
+d/home/cain/Embedded/AT91/work/ECBOT/FPGA/ecbot/new_logic/simulation
+w1244913216
+F../ecbot.v
+L0 16
+OE;L;6.0d;29
+r1
+31
+o+acc
+n@e@c@bot
+vglbl
+IT?5S;>bN`@zG_25]R_4A33
+VnN]4Gon>inod6>M^M2[SV1
+d/home/cain/Embedded/AT91/work/ECBOT/FPGA/ecbot/new_logic/simulation
+w1179523376
+F/opt/cad/Xilinx/verilog/src/glbl.v
+L0 5
+OE;L;6.0d;29
+r1
+31
+o+acc
+vRCServo
+IjFZAMUA=i<i5]zAeAT8M81
+V:n=C6?:RR:Pch1iGaR[fB3
+d/home/cain/Embedded/AT91/work/ECBOT/FPGA/ecbot/new_logic/simulation
+w1204225012
+F../rcservo.v
+L0 3
+OE;L;6.0d;29
+r1
+31
+o+acc
+n@r@c@servo
+vRCServoLogic
+IURg6k_eUmHQL;9ZW[kL?V3
+VXekE`3Am_f@dQcl>oN]_41
+d/home/cain/Embedded/AT91/work/ECBOT/FPGA/ecbot/new_logic/simulation
+w1204225012
+F../rcservo.v
+L0 67
+OE;L;6.0d;29
+r1
+31
+o+acc
+n@r@c@servo@logic

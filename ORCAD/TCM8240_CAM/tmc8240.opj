@@ -1,0 +1,53 @@
+(ExpressProject "tmc8240"
+  (ProjectVersion "19981106")
+  (ProjectType "PCB")
+  (Folder "Design Resources"
+    (Folder "Library"
+      (File ".\toshiba.olb"
+        (Type "Schematic Library")))
+    (NoModify)
+    (File ".\tmc8240.dsn"
+      (Type "Schematic Design"))
+    (BuildFileAddedOrDeleted "x")
+    (CompileFileAddedOrDeleted "x")
+    (Netlist_TAB "3")
+    (LAYOUT_Netlist_File "TMC8240.MNL")
+    (LAYOUT_PCB_Footprint "{PCB Footprint}")
+    (FALSE)
+    (LAYOUT_Units "0")
+    (TRUE)
+    (FALSE))
+  (Folder "Outputs"
+    (File ".\tmc8240.mnl"
+      (Type "LAYOUT Netlist File")))
+  (Folder "Referenced Projects")
+  (PartMRUSelector
+    (TCM8240MD
+      (FullPartName "TCM8240MD.Normal")
+      (LibraryName "C:\CAIN\ECBOT\V4.0\TOSHIBA.OLB")
+      (DeviceIndex "0")))
+  (LastUsedLibraryBrowseDirectory "C:\cain\ECBOT\V4.0")
+  (GlobalState
+    (FileView
+      (Path "Design Resources")
+      (Path "Design Resources" ".\tmc8240.dsn")
+      (Path "Design Resources" ".\tmc8240.dsn" "SCHEMATIC1")
+      (Path "Design Resources" "Library")
+      (Path "Outputs")
+      (Select "Design Resources" ".\tmc8240.dsn" "SCHEMATIC1" "PAGE1"))
+    (HierarchyView)
+    (Doc
+      (Type "COrCapturePMDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -4 -23 6 457 21 478"))
+      (Tab 0))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 2 3 -1 -1 -4 -23 44 1107 44 396")
+        (Scroll "0 0")
+        (Zoom "100")
+        (Occurrence "/"))
+      (Path "C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240.DSN")
+      (Schematic "SCHEMATIC1")
+      (Page "PAGE1"))))

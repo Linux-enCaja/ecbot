@@ -1,0 +1,103 @@
+Tue Jun 02 18:55:45 Saved as file Backup0.max
+Tue Jun 02 18:55:45 Windows which were open at time of error:
+Tue Jun 02 18:55:45 	ActiveWindow: &Design
+Tue Jun 02 18:55:45 	Icon: &Components
+Tue Jun 02 18:55:45 	Icon: &Nets
+Tue Jun 02 18:55:45 	Icon: Post Proces&s
+Tue Jun 02 18:55:45 End-of-list
+Tue Jun 02 18:55:45 Loaded file BACKUP0.MAX
+Wed Jun 03 09:55:53 Saved as file C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-4.MAX
+Wed Jun 03 14:21:07 Saved as file BACKUP1.MAX
+Wed Jun 03 14:21:07 Saved as file C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-4.MAX
+Wed Jun 03 14:21:18 UserDiv from Layout.INI for AutoECO: 60
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-4.MAX
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\AT91.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ECBOT.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_BATTERY.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_CONN.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_FUSE.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_HARDWARE.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_MODULE.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_PRTDEV.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_RELAY.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_CAP.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_DIODE.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_IC.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_IND.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_RES.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_SWX.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_XFMR.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_XISTR.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SM_XTAL.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_SOCKETS.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_CAP.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_DIODE.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_IC.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_IND.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_RES1.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_SWX.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_XFMR.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_XISTR.LLB
+Wed Jun 03 14:21:18 Loaded file C:\CAINPCB\FOOTPRINT\ESP_TH_XTAL.LLB
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\BCON100T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\BCON156T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\BGA.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\CLCC.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DCON050T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DCON085T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DIMM050F.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DIMM050T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DIN.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DIP100B.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DIP100T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DSUBT.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\DSUBT_HD.LLB
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\ECON100T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\FBUS.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\ISA.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\JUMPER.LLB
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\LAYOUT.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\LCON100T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\PC104.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\PCI.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\PCON100T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\PCON156T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\PGA.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\PLCC.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\QUAD.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\QUADB.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\RELAY.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\RF.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SBUS.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SIMM050F.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SIMM050T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SIMM100F.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SIMM100T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SIP.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SM.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SOG.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\SOJ.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\STIFF.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TELE.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TM_AXIAL.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TM_CAP_P.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TM_CYLND.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TM_DIODE.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TM_DISC.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TM_RAD.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TO.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\TRAINING.LLB
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\VRES.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\WCON100T.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\XT.llb
+Wed Jun 03 14:21:18 Loaded file C:\Cadence\SPB_15.5\tools\Layout_Plus\library\ZIGZAG.llb
+Wed Jun 03 14:21:21 Saved as file C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.MAX
+Wed Jun 03 14:21:21 Loaded file C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.MAX
+Wed Jun 03 14:22:21 Saved as file C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.MAX
+Wed Jun 03 14:22:45 Saved as file ~undo.max
+Wed Jun 03 14:22:57 Saved as file C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.MAX
+Wed Jun 03 14:31:32 Saved as file BACKUP1.MAX
+Wed Jun 03 14:42:02 Saved as file BACKUP1.MAX
+Wed Jun 03 14:52:33 Saved as file BACKUP1.MAX
+Wed Jun 03 15:03:02 Saved as file BACKUP1.MAX
+Wed Jun 03 15:05:08 Saved as file C:\CAINPCB\ECBOT\V5\TCM8240_CAM\TMC8240-5.MAX

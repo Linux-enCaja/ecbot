@@ -1,0 +1,62 @@
+NET clk   LOC = "P87";
+NET reset LOC = "P75" PULLDOWN;   #WARNING change to another pin
+NET led   LOC = "P97";
+
+#ADDRESS BUS
+#NET "addr<25>" LOC = "P32";
+#NET "addr<24>" LOC = "P34";
+#NET "addr<23>" LOC = "P35";
+#NET "addr<22>" LOC = "P36";
+#NET "addr<21>" LOC = "P37";
+NET "addr<9>" LOC = "P38";
+NET "addr<8>" LOC = "P39";
+NET "addr<7>" LOC = "P40";
+NET "addr<6>" LOC = "P42";
+NET "addr<5>" LOC = "P43";
+NET "addr<4>" LOC = "P44";
+NET "addr<3>" LOC = "P47";
+NET "addr<2>" LOC = "P48";
+NET "addr<1>" LOC = "P49";
+NET "addr<0>" LOC = "P50";
+
+#DATA BUS
+NET "sram_data<15>" LOC = "P1";
+NET "sram_data<14>" LOC = "P2";
+NET "sram_data<13>" LOC = "P4";
+NET "sram_data<12>" LOC = "P5";
+NET "sram_data<11>" LOC = "P8";
+NET "sram_data<10>" LOC = "P9";
+NET "sram_data<9>"  LOC = "P11";
+NET "sram_data<8>"  LOC = "P12";
+NET "sram_data<7>"  LOC = "P13";
+NET "sram_data<6>"  LOC = "P14";
+NET "sram_data<5>"  LOC = "P15";
+NET "sram_data<4>"  LOC = "P16";
+NET "sram_data<3>"  LOC = "P17";
+NET "sram_data<2>"  LOC = "P21";
+NET "sram_data<1>"  LOC = "P22";
+NET "sram_data<0>"  LOC = "P23";
+
+#CONTROL BUS
+NET "nwe"   LOC = "P27";
+NET "noe"   LOC = "P28";
+NET "ncs"   LOC = "P30";
+
+#CAMERA INTERFACE
+#NET "cen"     LOC = "P75";
+#NET "crst"    LOC = "P74";
+#NET "cscl"    LOC = "P72";
+#NET "csda"    LOC = "P71";
+#NET "cvsync"  LOC = "P68";
+#NET "chsync"  LOC = "P67";
+#NET "cvclk"   LOC = "P65";
+#NET "cmclk"   LOC = "P64";
+#NET "y0"      LOC = "P63";
+#NET "y1"      LOC = "P62";
+#NET "y2"      LOC = "P61";
+#NET "y3"      LOC = "P60";
+#NET "y4"      LOC = "P59";
+#NET "y5"      LOC = "P55";
+#NET "y6"      LOC = "P54";
+#NET "y7"      LOC = "P53";
+

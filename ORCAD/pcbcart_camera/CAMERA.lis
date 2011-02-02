@@ -1,0 +1,162 @@
+Post Processor Report
+OrCAD FILE: C:\CAIN\ECBOT\V3\CAMERA.MAX
+Wed Nov 07 09:40:39 2007
+
+*********************************************************
+
+Output file: C:\CAIN\ECBOT\V3\CAMERA.TOP
+
+Aperture totals for C:\CAIN\ECBOT\V3\CAMERA.TOP:
+---------------------------------------------------------
+D10:  0.0500 SQUARE --       0 Draws,       2 Flashes
+D11:  0.0500 x 0.0400 RECTANGLE -----       4 Flashes
+D12:  0.0709 ROUND  --       0 Draws,       2 Flashes
+D13:  0.0276 x 0.0787 RECTANGLE -----      24 Flashes
+D14:  0.0787 x 0.0276 RECTANGLE -----      24 Flashes
+D15:  0.0472 ROUND  --       0 Draws,      20 Flashes
+D16:  0.0315 ROUND  --       0 Draws,      26 Flashes
+D17:  0.0079 ROUND  --     120 Draws,       0 Flashes
+D18:  0.0197 ROUND  --      26 Draws,       0 Flashes
+D19:  0.0157 ROUND  --      27 Draws,       0 Flashes
+D20:  0.0098 ROUND  --       4 Draws,       0 Flashes
+---------------------------------------------------------
+ 11 D-Codes      -----     177 Draws,     102 Flashes
+
+*********************************************************
+
+Output file: C:\CAIN\ECBOT\V3\CAMERA.BOT
+
+Aperture totals for C:\CAIN\ECBOT\V3\CAMERA.BOT:
+---------------------------------------------------------
+D17:  0.0079 ROUND  --    2078 Draws,       0 Flashes
+D18:  0.0197 ROUND  --       4 Draws,       0 Flashes
+D21:  0.0400 x 0.0500 RECTANGLE -----      12 Flashes
+D22:  0.0500 x 0.0400 RECTANGLE -----       8 Flashes
+D23:  0.1000 x 0.0600 RECTANGLE -----       6 Flashes
+D24:  0.0500 SQUARE --       0 Draws,       2 Flashes
+D25:  0.0709 ROUND  --       0 Draws,       2 Flashes
+D26:  0.0472 ROUND  --       0 Draws,      20 Flashes
+D27:  0.0315 ROUND  --       0 Draws,      26 Flashes
+D28:  0.0100 ROUND  --      74 Draws,       0 Flashes
+---------------------------------------------------------
+ 10 D-Codes      -----    2156 Draws,      76 Flashes
+
+*********************************************************
+
+Output file: C:\CAIN\ECBOT\V3\CAMERA.SMT
+
+Aperture totals for C:\CAIN\ECBOT\V3\CAMERA.SMT:
+---------------------------------------------------------
+D22:  0.0500 x 0.0400 RECTANGLE -----       4 Flashes
+D24:  0.0500 SQUARE --       0 Draws,       2 Flashes
+D29:  0.0748 ROUND  --       0 Draws,       2 Flashes
+D30:  0.0315 x 0.0866 RECTANGLE -----      24 Flashes
+D31:  0.0866 x 0.0315 RECTANGLE -----      24 Flashes
+D32:  0.0551 ROUND  --       0 Draws,      20 Flashes
+---------------------------------------------------------
+  6 D-Codes      -----       0 Draws,      76 Flashes
+
+*********************************************************
+
+Output file: C:\CAIN\ECBOT\V3\CAMERA.SMB
+
+Aperture totals for C:\CAIN\ECBOT\V3\CAMERA.SMB:
+---------------------------------------------------------
+D21:  0.0400 x 0.0500 RECTANGLE -----      12 Flashes
+D22:  0.0500 x 0.0400 RECTANGLE -----       8 Flashes
+D24:  0.0500 SQUARE --       0 Draws,       2 Flashes
+D29:  0.0748 ROUND  --       0 Draws,       2 Flashes
+D32:  0.0551 ROUND  --       0 Draws,      20 Flashes
+D33:  0.1050 x 0.0650 RECTANGLE -----       6 Flashes
+---------------------------------------------------------
+  6 D-Codes      -----       0 Draws,      50 Flashes
+
+*********************************************************
+
+Output file: C:\CAIN\ECBOT\V3\CAMERA.SST
+
+Aperture totals for C:\CAIN\ECBOT\V3\CAMERA.SST:
+---------------------------------------------------------
+D17:  0.0079 ROUND  --      25 Draws,       0 Flashes
+D18:  0.0197 ROUND  --      21 Draws,       0 Flashes
+D19:  0.0157 ROUND  --       6 Draws,       0 Flashes
+D34:  0.0060 ROUND  --      38 Draws,       0 Flashes
+D35:  0.0118 ROUND  --      53 Draws,       0 Flashes
+---------------------------------------------------------
+  5 D-Codes      -----     143 Draws,       0 Flashes
+
+*********************************************************
+
+Output file: C:\CAIN\ECBOT\V3\CAMERA.SSB
+
+Aperture totals for C:\CAIN\ECBOT\V3\CAMERA.SSB:
+---------------------------------------------------------
+D17:  0.0079 ROUND  --      33 Draws,       0 Flashes
+D34:  0.0060 ROUND  --     240 Draws,       0 Flashes
+---------------------------------------------------------
+  2 D-Codes      -----     273 Draws,       0 Flashes
+
+*********************************************************
+
+Output file: C:\CAIN\ECBOT\V3\CAMERA.DRD
+
+Aperture totals for C:\CAIN\ECBOT\V3\CAMERA.DRD:
+---------------------------------------------------------
+D19:  0.0157 ROUND  --      12 Draws,       0 Flashes
+D28:  0.0100 ROUND  --     538 Draws,       0 Flashes
+---------------------------------------------------------
+  2 D-Codes      -----     550 Draws,       0 Flashes
+
+*********************************************************
+
+Output file: C:\CAIN\ECBOT\V3\CAMERA.FAB
+
+Aperture totals for C:\CAIN\ECBOT\V3\CAMERA.FAB:
+---------------------------------------------------------
+D19:  0.0157 ROUND  --      12 Draws,       0 Flashes
+D28:  0.0100 ROUND  --    1718 Draws,       0 Flashes
+D36:  0.0157 ROUND  --       0 Draws,      26 Flashes
+D37:  0.0010 ROUND  --      12 Draws,       0 Flashes
+D38:  0.0200 ROUND  --      77 Draws,       0 Flashes
+---------------------------------------------------------
+  5 D-Codes      -----    1819 Draws,      26 Flashes
+
+
+*********************************************************
+
+Aperture totals for entire project:
+---------------------------------------------------------
+D10:  0.0500 SQUARE --       0 Draws,       2 Flashes
+D11:  0.0500 x 0.0400 RECTANGLE -----       4 Flashes
+D12:  0.0709 ROUND  --       0 Draws,       2 Flashes
+D13:  0.0276 x 0.0787 RECTANGLE -----      24 Flashes
+D14:  0.0787 x 0.0276 RECTANGLE -----      24 Flashes
+D15:  0.0472 ROUND  --       0 Draws,      20 Flashes
+D16:  0.0315 ROUND  --       0 Draws,      26 Flashes
+D17:  0.0079 ROUND  --    2256 Draws,       0 Flashes
+D18:  0.0197 ROUND  --      51 Draws,       0 Flashes
+D19:  0.0157 ROUND  --      57 Draws,       0 Flashes
+D20:  0.0098 ROUND  --       4 Draws,       0 Flashes
+D21:  0.0400 x 0.0500 RECTANGLE -----      24 Flashes
+D22:  0.0500 x 0.0400 RECTANGLE -----      20 Flashes
+D23:  0.1000 x 0.0600 RECTANGLE -----       6 Flashes
+D24:  0.0500 SQUARE --       0 Draws,       6 Flashes
+D25:  0.0709 ROUND  --       0 Draws,       2 Flashes
+D26:  0.0472 ROUND  --       0 Draws,      20 Flashes
+D27:  0.0315 ROUND  --       0 Draws,      26 Flashes
+D28:  0.0100 ROUND  --    2330 Draws,       0 Flashes
+D29:  0.0748 ROUND  --       0 Draws,       4 Flashes
+D30:  0.0315 x 0.0866 RECTANGLE -----      24 Flashes
+D31:  0.0866 x 0.0315 RECTANGLE -----      24 Flashes
+D32:  0.0551 ROUND  --       0 Draws,      40 Flashes
+D33:  0.1050 x 0.0650 RECTANGLE -----       6 Flashes
+D34:  0.0060 ROUND  --     278 Draws,       0 Flashes
+D35:  0.0118 ROUND  --      53 Draws,       0 Flashes
+D36:  0.0157 ROUND  --       0 Draws,      26 Flashes
+D37:  0.0010 ROUND  --      12 Draws,       0 Flashes
+D38:  0.0200 ROUND  --      77 Draws,       0 Flashes
+---------------------------------------------------------
+ 29 D-Codes      -----    5118 Draws,     330 Flashes
+
+
+No warnings or errors.

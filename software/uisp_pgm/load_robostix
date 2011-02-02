@@ -1,0 +1,18 @@
+insmod robostix_drv.ko
+
+for (( i = 0; i < 5; i++ ))
+do
+  if [ -f  /dev/robostix$i ]
+  then
+    echo "$1 file exist"
+  else
+    mknod /dev/robostix$i c 251 $i
+  fi
+done
+
+uisp -dlpt=/dev/robostix0
+uisp -dlpt=/dev/robostix1
+uisp -dlpt=/dev/robostix2
+uisp -dlpt=/dev/robostix3
+uisp -dlpt=/dev/robostix4
+

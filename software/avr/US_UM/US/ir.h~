@@ -1,0 +1,10 @@
+#ifndef IR_H
+#define IR_H
+
+#include "US.h"
+#include "adc.h"
+
+  void Read_IR(unsigned short * IR_value, unsigned char intensity);
+  void Set_IR_Intensity(unsigned char Intensity);
+
+#endif

@@ -1,0 +1,37 @@
+DESTDIR=
+
+
+PNGPP   = ../src
+
+ifdef P_FREETYPE
+FT_ARG = -DNO_FREETYPE
+else
+FT_ARG = `freetype-config --cflags` `freetype-config --libs`
+endif
+
+EMBEDDED =1
+CXXFLAGS  =  -Wall  -g3 -O0  -I$(PREFIX)/include -I$(PNGPP) -Wno-deprecated 
+CFLAGS    =  -Wall  -g3 -O0
+ifdef EMBEDDED
+CROSS_COMPILE =/home/at91/oe/tmp/cross/armv4t/bin/arm-angstrom-linux-gnueabi-
+CFLAGS	  += -mcpu=arm920t -Wall  -g -O2 -fno-strict-aliasing -I$(PREFIX)/include -I$(PNGPP) -Wno-deprecated
+CXXFLAGS  += -mcpu=arm920t -Wall  -g -O2 -fno-strict-aliasing  -I$(PREFIX)/include -I$(PNGPP) -Wno-deprecated  
+LIBS=-lstdc++
+
+CC      = $(CROSS_COMPILE)gcc
+CXX     = $(CROSS_COMPILE)g++
+AR      = $(CROSS_COMPILE)ar
+RANLIB  = $(CROSS_COMPILE)ranlib
+
+PREFIX := /home/at91/buildroot/build_arm/staging_dir/usr/
+endif
+
+
+INC=  -I../src/ -I$(PREFIX)/include/
+
+LIBS= -L../src -L$(PREFIX)/lib/ -lz -lpng -lpngwriter
+
+INSTALL=install
+
+SELF=make.include.linux
+

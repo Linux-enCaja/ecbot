@@ -1,0 +1,13 @@
+#!/bin/sh
+#
+# Script that program an ECBOT's AVR
+# usage: avr_prog [Chip_Number] [programming file]
+  echo "running test"
+  cont=0
+  while [ $cont -le 256 ]
+  do
+    echo $cont
+    capture $cont 0x60 test$cont.bin 
+    cont=`expr $cont + 1`
+  done
+  exit 1

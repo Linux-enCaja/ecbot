@@ -1,0 +1,99 @@
+{Program	GerbTool for Layout
+	{Version	8.0}
+	{Created	Wed Nov 07 09:40:40 2007}
+}
+{Environment
+	{FilesPath  C:\CAIN\ECBOT\V3}
+}
+{Layers
+	{Layer  1
+		{File        CAMERA.TOP}
+		{LyrName     -}
+		{ApList      }
+		{Visibility  On}
+		{FlashColor  Green}
+		{DrawColor   Green}
+		{Type        Top}
+	}
+	{Layer  2
+		{File        CAMERA.BOT}
+		{LyrName     -}
+		{ApList      }
+		{Visibility  On}
+		{FlashColor  Red}
+		{DrawColor   Red}
+		{Type        Bottom}
+	}
+	{Layer  3
+		{File        CAMERA.SMT}
+		{LyrName     -}
+		{ApList      }
+		{Visibility  On}
+		{FlashColor  Green}
+		{DrawColor   Green}
+		{Type        Other}
+	}
+	{Layer  4
+		{File        CAMERA.SMB}
+		{LyrName     -}
+		{ApList      }
+		{Visibility  On}
+		{FlashColor  vga16yellow}
+		{DrawColor   vga16yellow}
+		{Type        Other}
+	}
+	{Layer  5
+		{File        CAMERA.SST}
+		{LyrName     -}
+		{ApList      }
+		{Visibility  On}
+		{FlashColor  White}
+		{DrawColor   White}
+		{Type        Other}
+	}
+	{Layer  6
+		{File        CAMERA.SSB}
+		{LyrName     -}
+		{ApList      }
+		{Visibility  On}
+		{FlashColor  Yellow}
+		{DrawColor   Yellow}
+		{Type        Other}
+	}
+	{Layer  7
+		{File        CAMERA.DRD}
+		{LyrName     -}
+		{ApList      }
+		{Visibility  On}
+		{FlashColor  Red}
+		{DrawColor   Red}
+		{Type        Other}
+	}
+	{Layer  8
+		{File        CAMERA.FAB}
+		{LyrName     -}
+		{ApList      }
+		{Visibility  On}
+		{FlashColor  Green}
+		{DrawColor   Green}
+		{Type        Other}
+	}
+}
+{Format Gerber
+	{Dialect           RS274X}
+	{m.n               3.4}
+	{Mode              Absolute}
+	{ZeroSuppression   Leading}
+	{Terminator        0x2a, 0xD, 0xA}
+	{Metric            No}
+	{Modal             No}
+	{UserData          Yes}
+	{Nets              No}
+	{Gcmds             Yes}
+	{CharSet           ASCII}
+	{Arcs360           No}
+	{ArcsModal         Yes}
+	{HonorCrLf         No}
+	{Comments          Yes}
+	{Flags             0}
+}

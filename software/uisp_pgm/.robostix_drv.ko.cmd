@@ -1,0 +1,1 @@
+cmd_/home/cain/Embedded/AT91/work/ecbot/uisp_pgm/robostix_drv.ko := arm-linux-ld -EL  -r -o /home/cain/Embedded/AT91/work/ecbot/uisp_pgm/robostix_drv.ko /home/cain/Embedded/AT91/work/ecbot/uisp_pgm/robostix_drv.o /home/cain/Embedded/AT91/work/ecbot/uisp_pgm/robostix_drv.mod.o

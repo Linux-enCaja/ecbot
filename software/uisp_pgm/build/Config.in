@@ -1,0 +1,7 @@
+config BR2_PACKAGE_UISP
+	bool "uisp"
+	default n
+	select BR2_INSTALL_LIBSTDCPP
+	help
+	  Install the uisp package
+

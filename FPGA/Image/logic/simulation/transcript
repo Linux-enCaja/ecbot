@@ -1,0 +1,68 @@
+# //  ModelSim SE 6.0d Apr 25 2005 Linux 2.6.32-21-generic
+# //
+# //  Copyright Mentor Graphics Corporation 2005
+# //              All Rights Reserved.
+# //
+# //  THIS WORK CONTAINS TRADE SECRET AND 
+# //  PROPRIETARY INFORMATION WHICH IS THE PROPERTY
+# //  OF MENTOR GRAPHICS CORPORATION OR ITS LICENSORS
+# //  AND IS SUBJECT TO LICENSE TERMS.
+# //
+# do ECBot_TB.do 
+# ** Warning: (vlib-34) Library already exists at "work".
+# Model Technology ModelSim SE vlog 6.0d Compiler 2005.04 Apr 25 2005
+# -- Compiling module ECBot
+# 
+# Top level modules:
+# 	ECBot
+# Model Technology ModelSim SE vlog 6.0d Compiler 2005.04 Apr 25 2005
+# -- Compiling module DBUSMUX
+# 
+# Top level modules:
+# 	DBUSMUX
+# Model Technology ModelSim SE vlog 6.0d Compiler 2005.04 Apr 25 2005
+# -- Compiling module capture_block
+# 
+# Top level modules:
+# 	capture_block
+# Model Technology ModelSim SE vlog 6.0d Compiler 2005.04 Apr 25 2005
+# -- Compiling module RCServo
+# -- Compiling module RCServoLogic
+# 
+# Top level modules:
+# 	RCServo
+# Model Technology ModelSim SE vlog 6.0d Compiler 2005.04 Apr 25 2005
+# -- Compiling module camera_TB_v
+# 
+# Top level modules:
+# 	camera_TB_v
+# Model Technology ModelSim SE vlog 6.0d Compiler 2005.04 Apr 25 2005
+# -- Compiling module glbl
+# 
+# Top level modules:
+# 	glbl
+# vsim -L xilinxcorelib_ver -L unisims_ver -t 1ps camera_TB_v glbl 
+# Loading work.camera_TB_v
+# Loading work.ECBot
+# Loading work.capture_block
+# Loading /opt/cad/modeltech/xilinx/verilog/unisims_ver.RAMB16_S4_S4
+# Loading work.RCServo
+# Loading work.RCServoLogic
+# Loading work.glbl
+# ** Warning: (vsim-3017) ../ecbot_TB.v(31): [TFMPC] - Too few port connections. Expected 18, found 17.
+#         Region: /camera_TB_v/uut
+# ** Warning: (vsim-3015) ../ecbot_TB.v(31): [PCDPC] - Port size (10 or 10) does not match connection size (1) for port 'P'.
+#         Region: /camera_TB_v/uut
+# ** Warning: (vsim-3722) ../ecbot_TB.v(31): [TFMPC] - Missing connection for port 'led'.
+# .main_pane.mdi.interior.cs.vm.paneset.cli_0.wf.clip.cs
+# .main_pane.workspace
+# .main_pane.signals.interior.cs
+# Memory Collision Error on RAMB16_S4_S4:camera_TB_v.uut.ba3.display_wa_rb at simulation time 140.000 ns
+# A read was performed on address 000 (hex) of Port B while a write was requested to the same address on Port A. The write will be successful however the read value on Port B is unknown until the next CLKB cycle.
+# Memory Collision Error on RAMB16_S4_S4:camera_TB_v.uut.ba2.display_wa_rb at simulation time 140.000 ns
+# A read was performed on address 000 (hex) of Port B while a write was requested to the same address on Port A. The write will be successful however the read value on Port B is unknown until the next CLKB cycle.
+# Memory Collision Error on RAMB16_S4_S4:camera_TB_v.uut.ba1.display_wa_rb at simulation time 140.000 ns
+# A read was performed on address 000 (hex) of Port B while a write was requested to the same address on Port A. The write will be successful however the read value on Port B is unknown until the next CLKB cycle.
+# Memory Collision Error on RAMB16_S4_S4:camera_TB_v.uut.ba0.display_wa_rb at simulation time 140.000 ns
+# A read was performed on address 000 (hex) of Port B while a write was requested to the same address on Port A. The write will be successful however the read value on Port B is unknown until the next CLKB cycle.
+quit

@@ -1,0 +1,7 @@
+xst -ise "/home/cain/Embedded/AT91/work/ecbot/FPGA/driver_samples/sram/sram/sram.ise" -intstyle ise -ifn sram_bus.xst -ofn sram_bus.syr
+ngdbuild -ise "/home/cain/Embedded/AT91/work/ecbot/FPGA/driver_samples/sram/sram/sram.ise" -intstyle ise -dd _ngo -nt timestamp -i -p xc3s400-pq208-4 "sram_bus.ngc" sram_bus.ngd
+map -ise "/home/cain/Embedded/AT91/work/ecbot/FPGA/driver_samples/sram/sram/sram.ise" -intstyle ise -p xc3s400-pq208-4 -cm area -pr b -k 4 -c 100 -o sram_bus_map.ncd sram_bus.ngd sram_bus.pcf
+par -ise "/home/cain/Embedded/AT91/work/ecbot/FPGA/driver_samples/sram/sram/sram.ise" -w -intstyle ise -ol std -t 1 sram_bus_map.ncd sram_bus.ncd sram_bus.pcf
+trce -ise "/home/cain/Embedded/AT91/work/ecbot/FPGA/driver_samples/sram/sram/sram.ise" -intstyle ise -e 3 -s 4 -xml sram_bus sram_bus.ncd -o sram_bus.twr sram_bus.pcf
+bitgen -ise "/home/cain/Embedded/AT91/work/ecbot/FPGA/driver_samples/sram/sram/sram.ise" -intstyle ise -f sram_bus.ut sram_bus.ncd
+bitgen -ise "/home/cain/Embedded/AT91/work/ecbot/FPGA/driver_samples/sram/sram/sram.ise" -intstyle ise -f sram_bus.ut sram_bus.ncd
